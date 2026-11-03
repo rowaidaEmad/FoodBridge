@@ -111,6 +111,32 @@ own sub-package under `patterns/` when we start Phase 2.
 | Pickups, beneficiaries & reports | `PickupTask`, `Distribution`, `DonationRequest`, `ImpactReport`, their repositories, `PickupController`, `BeneficiaryController`, `ReportController`, `views/volunteer/PickupTasksView`, `views/beneficiary`, `ImpactReportView` |
 | Lookups & database (Singleton) | `models/lookups`, `DatabaseManager`, `Repository<T>`, lookup repositories, `LookupController`, `views/lookups` |
 
+## Receipts (Decorator)
+
+Donors can open **My donations (pay / cancel)**, select a donation and click **Receipt**.
+Money donations must be paid first; cancelled donations cannot receive a receipt. Food donations
+include their item details. Opening a receipt again reuses its saved number and issue date.
+
+The receipt window lets the donor independently select a thank-you message and tax information.
+`ReceiptService` wraps `BasicReceipt` in `ThankYouDecorator`, `TaxInfoDecorator`, or both, according
+to `ReceiptOptions`. Formatting choices do not modify the saved receipt. Tax information is a
+general recordkeeping note; the application has no tax deduction or food valuation rules.
+Receipt database operations run on a Swing worker.
+
+Run the isolated database tests (same prerequisites as beneficiary verification):
+
+```powershell
+py tests/run-receipt-tests.py
+py tests/run-receipt-tests.py --gui
+```
+
+For only the decorator checks, after compiling the application to `target/receipt-classes`:
+
+```powershell
+javac --release 17 -cp target/receipt-classes -d target/receipt-classes tests/ReceiptDecoratorTest.java
+java -cp target/receipt-classes ReceiptDecoratorTest
+```
+
 ## Beneficiary module
 
 After login, beneficiaries can open **My profile**, **My requests**, and **Received distributions**.

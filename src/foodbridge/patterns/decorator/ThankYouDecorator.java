@@ -6,12 +6,10 @@ package foodbridge.patterns.decorator;
 public class ThankYouDecorator extends ReceiptDecorator {
     public ThankYouDecorator(ReceiptComponent wrapped) {
         super(wrapped);
-        // TODO: implement
     }
 
     @Override
     public String generate() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return super.generate() + "\n\nThank you for your donation to FoodBridge!";
     }
 }
