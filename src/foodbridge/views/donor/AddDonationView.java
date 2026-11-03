@@ -3,6 +3,7 @@ package foodbridge.views.donor;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
 import foodbridge.controllers.DonationController;
+import foodbridge.models.donations.DonationDetails;
 import foodbridge.models.donations.FoodItem;
 import foodbridge.models.donations.MoneyDonation;
 import foodbridge.models.lookups.FoodCategory;
@@ -105,8 +107,11 @@ public class AddDonationView implements View {
         JButton save = new JButton("Save money donation");
         save.addActionListener(e -> {
             try {
-                double amount = Double.parseDouble(amountField.getText().trim());
-                int id = donationController.createMoneyDonation(donor, amount, (String) methodBox.getSelectedItem());
+                DonationDetails details = new DonationDetails();
+                details.setDonor(donor);
+                details.setAmount(new BigDecimal(amountField.getText().trim()));
+                details.setMethod((String) methodBox.getSelectedItem());
+                int id = donationController.createDonation("money", details);
                 JOptionPane.showMessageDialog(dialog,
                         "Money donation #" + id + " saved (Posted, unpaid).\nPay it from 'My donations'.");
                 dialog.dispose();
@@ -204,8 +209,12 @@ public class AddDonationView implements View {
             return;
         }
         try {
-            int id = donationController.createFoodDonation(donor, items, parseDate(expiryField.getText()),
-                    pickupField.getText().isBlank() ? null : pickupField.getText().trim());
+            DonationDetails details = new DonationDetails();
+            details.setDonor(donor);
+            details.setItems(items);
+            details.setExpiryDate(parseDate(expiryField.getText()));
+            details.setPickupWindow(pickupField.getText().isBlank() ? null : pickupField.getText().trim());
+            int id = donationController.createDonation("food", details);
             JOptionPane.showMessageDialog(dialog, "Food donation #" + id + " saved with " + items.size() + " item(s).");
             dialog.dispose();
         } catch (RuntimeException ex) {

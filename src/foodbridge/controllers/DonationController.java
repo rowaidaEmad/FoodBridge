@@ -1,19 +1,14 @@
 package foodbridge.controllers;
 
-import java.time.LocalDate;
 import java.util.List;
 
 import foodbridge.models.donations.Donation;
 import foodbridge.models.donations.DonationDetails;
 import foodbridge.models.donations.DonationProcessingResult;
-import foodbridge.models.donations.FoodDonation;
-import foodbridge.models.donations.FoodItem;
-import foodbridge.models.donations.MoneyDonation;
 import foodbridge.models.donations.Receipt;
 import foodbridge.models.lookups.DonationStatus;
 import foodbridge.models.lookups.FoodCategory;
 import foodbridge.models.lookups.Unit;
-import foodbridge.models.users.Donor;
 import foodbridge.patterns.decorator.ReceiptOptions;
 import foodbridge.repositories.DonationRepository;
 import foodbridge.repositories.DonationStatusRepository;
@@ -42,31 +37,9 @@ public class DonationController {
         // TODO (Decorator step): create the ReceiptService.
     }
 
+    /** type is "money" or "food"; DonationService picks the matching DonationFactory. */
     public int createDonation(String type, DonationDetails request) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    // TODO (Factory step): replace with createDonation(...) through the DonationFactory;
-    // the direct `new` below is temporary so the screens can be tested.
-    public int createMoneyDonation(Donor donor, double amount, String method) {
-        MoneyDonation donation = new MoneyDonation(donor);
-        donation.setAmount(amount);
-        donation.setMethod(method);
-        donationRepository.save(donation);
-        return donation.getId();
-    }
-
-    // TODO (Factory step): replace with createDonation(...) through the DonationFactory.
-    public int createFoodDonation(Donor donor, List<FoodItem> items, LocalDate expiryDate, String pickupWindow) {
-        FoodDonation donation = new FoodDonation(donor);
-        for (FoodItem item : items) {
-            donation.addItem(item);
-        }
-        donation.setExpiryDate(expiryDate);
-        donation.setPickupWindow(pickupWindow);
-        donationRepository.save(donation);
-        return donation.getId();
+        return donationService.createDonation(type, request);
     }
 
     public List<Donation> listDonations(int donorId) {

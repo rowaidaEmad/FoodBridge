@@ -9,6 +9,8 @@ import foodbridge.models.donations.DonationProcessingResult;
 import foodbridge.models.donations.MoneyDonation;
 import foodbridge.models.lookups.DonationStatus;
 import foodbridge.patterns.factory.DonationFactory;
+import foodbridge.patterns.factory.FoodDonationFactory;
+import foodbridge.patterns.factory.MoneyDonationFactory;
 import foodbridge.patterns.strategy.CashStrategy;
 import foodbridge.patterns.strategy.CheckStrategy;
 import foodbridge.patterns.strategy.DonationProcessingStrategy;
@@ -23,8 +25,7 @@ import foodbridge.repositories.DonationStatusRepository;
  * it never contains cash / check / online logic itself.
  */
 public class DonationService {
-    // TODO (Factory step): fill with MoneyDonationFactory / FoodDonationFactory.
-    private Map<String, DonationFactory> factories;
+    private final Map<String, DonationFactory> factories = new HashMap<>();
     private final Map<String, DonationProcessingStrategy> strategies = new HashMap<>();
     private final DonationRepository donationRepository;
     private final DonationStatusRepository donationStatusRepository = new DonationStatusRepository();
@@ -35,7 +36,14 @@ public class DonationService {
 
     public DonationService(DonationRepository donationRepository) {
         this.donationRepository = donationRepository;
+        registerDefaultFactories();
         registerDefaultStrategies();
+    }
+
+    /** A new donation type needs only a new factory + product class and one line here. */
+    private void registerDefaultFactories() {
+        factories.put("money", new MoneyDonationFactory());
+        factories.put("food", new FoodDonationFactory());
     }
 
     /** A new payment method needs only a new strategy class and one line here. */
@@ -56,10 +64,21 @@ public class DonationService {
         strategies.put(method.trim().toLowerCase(), strategy);
     }
 
-    // TODO (Factory step): create the donation through the matching DonationFactory.
+    /** Creates the donation through the factory for its type ("money", "food") and saves it as Posted. */
     public int createDonation(String type, DonationDetails request) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (type == null || type.isBlank()) {
+            throw new IllegalArgumentException("Donation type is required");
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("Donation details are required");
+        }
+        DonationFactory factory = factories.get(type.trim().toLowerCase());
+        if (factory == null) {
+            throw new IllegalArgumentException("Unknown donation type: " + type);
+        }
+        Donation donation = factory.registerDonation(request.getDonor(), request);
+        donationRepository.save(donation);
+        return donation.getId();
     }
 
     public DonationProcessingResult processMoneyDonation(int id) {
