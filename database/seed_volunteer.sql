@@ -1,9 +1,9 @@
--- Demo data for the volunteer module. Run ONCE, after schema.sql and seed.sql.
+-- Demo data for the volunteer module. Run ONCE, after schema.sql and seed.sql (seed.sql fills the lookup tables this needs).
 -- The seeded donor and beneficiary cannot log in (their password hash is a placeholder).
 DO $$
 DECLARE
   v_donor BIGINT; v_ben BIGINT; v_don BIGINT;
-  v_status BIGINT := (SELECT id FROM donation_statuses ORDER BY id LIMIT 1);
+  v_status BIGINT := COALESCE((SELECT id FROM donation_statuses WHERE name='Posted'),(SELECT id FROM donation_statuses ORDER BY id LIMIT 1));
   v_cat BIGINT := (SELECT id FROM food_categories ORDER BY id LIMIT 1);
   v_unit BIGINT := (SELECT id FROM units ORDER BY id LIMIT 1);
   i INT;
