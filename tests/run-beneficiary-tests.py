@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 
 
-def main():
+def main(test_class="BeneficiaryModuleTest", module="beneficiary"):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gui", action="store_true", help="Also exercise actual Swing windows (requires a desktop)")
     parser.add_argument("--postgres-bin", type=Path, help="Folder containing initdb, pg_ctl, createdb and psql")
@@ -32,8 +32,8 @@ def main():
     javac, java = shutil.which("javac"), shutil.which("java")
     if not javac or not java:
         parser.error("A JDK supporting Java 17 is required on PATH.")
-    work = root / "target/beneficiary-verification"
-    classes = root / "target/beneficiary-classes"
+    work = root / f"target/{module}-verification"
+    classes = root / f"target/{module}-classes"
     work.mkdir(parents=True, exist_ok=True)
     classes.mkdir(parents=True, exist_ok=True)
 
@@ -51,6 +51,7 @@ def main():
 
     sources = list((root / "src").rglob("*.java")) + list((root / "tests").glob("*.java"))
     run([javac, "--release", "17", "-d", classes, *sources], timeout=60)
+    database = f"foodbridge_{module}_test"
     # All database files are under target. Verify the absolute cleanup boundary.
     with tempfile.TemporaryDirectory(prefix="postgres-", dir=work) as cluster_name:
         cluster = Path(cluster_name).resolve()
@@ -67,15 +68,15 @@ def main():
                  "-o", f"-h 127.0.0.1 -p {port} -F", "-w", "start"], timeout=60)
             started = True
             connection = ["-h", "127.0.0.1", "-p", str(port), "-U", "postgres"]
-            run([pg / ("createdb" + suffix), *connection, "foodbridge_beneficiary_test"], timeout=30)
+            run([pg / ("createdb" + suffix), *connection, database], timeout=30)
             for filename in ["schema.sql", "seed.sql"]:
-                run([pg / ("psql" + suffix), *connection, "-d", "foodbridge_beneficiary_test",
+                run([pg / ("psql" + suffix), *connection, "-d", database,
                      "-v", "ON_ERROR_STOP=1", "-f", root / "database" / filename], timeout=30)
             env = os.environ.copy()
-            env.update(DB_URL=f"jdbc:postgresql://127.0.0.1:{port}/foodbridge_beneficiary_test",
+            env.update(DB_URL=f"jdbc:postgresql://127.0.0.1:{port}/{database}",
                        DB_USER="postgres", DB_PASSWORD="isolated-test-only")
             run([java, "-cp", str(classes) + os.pathsep + str(args.jdbc_jar.resolve()),
-                 "BeneficiaryModuleTest", *(["--gui"] if args.gui else [])], env=env, timeout=150)
+                 test_class, *(["--gui"] if args.gui else [])], env=env, timeout=150)
         finally:
             if started:
                 run([pg / ("pg_ctl" + suffix), "-D", cluster, "-m", "fast", "-w", "stop"], timeout=60)
