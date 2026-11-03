@@ -20,6 +20,7 @@ import foodbridge.models.donations.FoodDonation;
 import foodbridge.models.donations.FoodItem;
 import foodbridge.models.donations.MoneyDonation;
 import foodbridge.models.users.Donor;
+import foodbridge.views.BackBar;
 import foodbridge.views.View;
 
 /**
@@ -50,22 +51,20 @@ public class PayDonationView implements View {
         JButton cancel = new JButton("Cancel donation");
         JButton viewItems = new JButton("View items");
         JButton refresh = new JButton("Refresh");
-        JButton close = new JButton("Close");
         pay.addActionListener(e -> onPay());
         cancel.addActionListener(e -> onCancel());
         viewItems.addActionListener(e -> onViewItems());
         refresh.addActionListener(e -> reload());
-        close.addActionListener(e -> dialog.dispose());
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.add(pay);
         buttons.add(cancel);
         buttons.add(viewItems);
         buttons.add(refresh);
-        buttons.add(close);
 
         JPanel content = new JPanel(new BorderLayout(8, 8));
-        content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        content.setBorder(BorderFactory.createEmptyBorder(8, 12, 12, 12));
+        content.add(BackBar.create(dialog::dispose), BorderLayout.NORTH);
         content.add(new JScrollPane(table), BorderLayout.CENTER);
         content.add(buttons, BorderLayout.SOUTH);
 

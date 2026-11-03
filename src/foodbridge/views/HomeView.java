@@ -93,12 +93,14 @@ public class HomeView implements View {
         frame.setVisible(true);
     }
 
-    /** Opens (or re-shows) a ModuleView window; it is closed on logout. */
+    /** Opens (or re-shows) a ModuleView window; its Back closes it and brings Home to the front. Closed on logout. */
     private JButton moduleButton(String title, Supplier<ModuleView> create) {
         JButton button = new JButton(title);
         button.addActionListener(e -> {
             try {
-                pages.computeIfAbsent(title, key -> create.get()).show();
+                ModuleView page = pages.computeIfAbsent(title, key -> create.get());
+                page.setOnBack(frame::toFront);
+                page.show();
             } catch (RuntimeException ex) {
                 JOptionPane.showMessageDialog(frame, ex.getMessage(), "FoodBridge", JOptionPane.ERROR_MESSAGE);
             }
@@ -106,7 +108,7 @@ public class HomeView implements View {
         return button;
     }
 
-    /** Opens a modal dialog screen. */
+    /** Opens a modal dialog screen; its Back closes it and returns to Home. */
     private JButton dialogButton(String title, Runnable open) {
         JButton button = new JButton(title);
         button.addActionListener(e -> {

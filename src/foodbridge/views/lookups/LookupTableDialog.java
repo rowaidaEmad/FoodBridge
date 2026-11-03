@@ -18,6 +18,8 @@ import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
 
+import foodbridge.views.BackBar;
+
 /**
  * Shared Swing dialog for the id/name lookup tables: list, add, rename, delete.
  * Each lookup view passes in its LookupController calls.
@@ -43,7 +45,6 @@ class LookupTableDialog {
         JButton addButton = new JButton("Add");
         JButton renameButton = new JButton("Rename");
         JButton deleteButton = new JButton("Delete");
-        JButton closeButton = new JButton("Close");
 
         addButton.addActionListener(e -> {
             String name = JOptionPane.showInputDialog(dialog, "New " + itemName + " name:");
@@ -67,16 +68,14 @@ class LookupTableDialog {
                 run(() -> delete.accept((Integer) model.getValueAt(row, 0)));
             }
         });
-        closeButton.addActionListener(e -> dialog.dispose());
-
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.add(addButton);
         buttons.add(renameButton);
         buttons.add(deleteButton);
-        buttons.add(closeButton);
 
         JPanel content = new JPanel(new BorderLayout(8, 8));
-        content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        content.setBorder(BorderFactory.createEmptyBorder(8, 12, 12, 12));
+        content.add(BackBar.create(dialog::dispose), BorderLayout.NORTH);
         content.add(new JScrollPane(table), BorderLayout.CENTER);
         content.add(buttons, BorderLayout.SOUTH);
 

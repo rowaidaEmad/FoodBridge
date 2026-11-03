@@ -27,6 +27,7 @@ import foodbridge.models.donations.MoneyDonation;
 import foodbridge.models.lookups.FoodCategory;
 import foodbridge.models.lookups.Unit;
 import foodbridge.models.users.Donor;
+import foodbridge.views.BackBar;
 import foodbridge.views.View;
 
 /**
@@ -66,10 +67,15 @@ public class AddDonationView implements View {
         tabs.addTab("Money", moneyPanel());
         tabs.addTab("Food", foodPanel());
 
+        JPanel page = new JPanel(new BorderLayout(4, 4));
+        page.setBorder(BorderFactory.createEmptyBorder(8, 8, 0, 8));
+        page.add(BackBar.create(dialog::dispose), BorderLayout.NORTH);
+        page.add(tabs, BorderLayout.CENTER);
+
         dialog.setTitle("FoodBridge - Add donation");
         dialog.setModal(true);
-        dialog.add(tabs);
-        dialog.setSize(760, 460);
+        dialog.add(page);
+        dialog.setSize(760, 490);
         dialog.setLocationRelativeTo(null);
     }
 

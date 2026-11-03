@@ -14,11 +14,22 @@ public abstract class ModuleView implements View {
     protected final JFrame frame;
     protected final JPanel content=new JPanel(new BorderLayout(12,12));
     private boolean busy;
+    private Runnable onBack=() -> { };
     protected ModuleView(String title,int width,int height) {
         frame=new JFrame(title); frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         content.setBorder(BorderFactory.createEmptyBorder(16,16,16,16));
-        frame.setContentPane(content); frame.setSize(width,height); frame.setLocationRelativeTo(null);
+        // "← Back" bar above every module page; the window's X does the same.
+        JPanel page=new JPanel(new BorderLayout());
+        JPanel bar=BackBar.create(this::back); bar.setBorder(BorderFactory.createEmptyBorder(8,16,0,16));
+        page.add(bar,BorderLayout.NORTH); page.add(content,BorderLayout.CENTER);
+        frame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent e) { onBack.run(); }
+        });
+        frame.setContentPane(page); frame.setSize(width,height); frame.setLocationRelativeTo(null);
     }
+    /** What Back does after this page closes (HomeView shows itself again). */
+    public final void setOnBack(Runnable action) { onBack=action; }
+    private void back() { frame.dispose(); onBack.run(); }
     @Override public void show() { frame.setVisible(true); refresh(); }
     public final void close() { frame.dispose(); }
     protected abstract void refresh();
