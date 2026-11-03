@@ -6,12 +6,11 @@ package foodbridge.patterns.decorator;
 public class TaxInfoDecorator extends ReceiptDecorator {
     public TaxInfoDecorator(ReceiptComponent wrapped) {
         super(wrapped);
-        // TODO: implement
     }
 
     @Override
     public String generate() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return super.generate() + "\n\nTax information: Keep this receipt for your records. "
+                + "Tax eligibility depends on applicable rules; no deduction or valuation is calculated here.";
     }
 }

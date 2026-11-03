@@ -12,16 +12,36 @@ public class Receipt {
     private LocalDate issueDate;
 
     public Receipt() {
-        // TODO: implement
+        issueDate = LocalDate.now();
+    }
+
+    public Receipt(Donation donation, String receiptNumber, LocalDate issueDate) {
+        if (donation == null || receiptNumber == null || receiptNumber.isBlank() || issueDate == null) {
+            throw new IllegalArgumentException("Donation, receipt number and issue date are required");
+        }
+        this.donation = donation;
+        this.receiptNumber = receiptNumber.trim();
+        this.issueDate = issueDate;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    /** Set by ReceiptRepository after saving or loading. */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public LocalDate getIssueDate() {
+        return issueDate;
     }
 
     public String getReceiptNumber() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return receiptNumber;
     }
 
     public Donation getDonation() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return donation;
     }
 }
