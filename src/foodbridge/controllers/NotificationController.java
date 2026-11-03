@@ -9,18 +9,13 @@ import foodbridge.repositories.NotificationRepository;
  * A user's notifications.
  */
 public class NotificationController {
-    private NotificationRepository notificationRepository;
-
-    public NotificationController() {
-        // TODO: implement
-    }
+    private final NotificationRepository notificationRepository = new NotificationRepository();
 
     public List<Notification> listForUser(int userId) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return notificationRepository.findByRecipient(userId);
     }
 
     public void markAsRead(int notificationId) {
-        // TODO: implement
+        notificationRepository.markRead(notificationId);
     }
 }

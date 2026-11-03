@@ -28,7 +28,11 @@ FoodBridge/
         │   │   ├── PickupTask.java
         │   │   ├── Distribution.java
         │   │   ├── DonationRequest.java
-        │   │   └── ImpactReport.java
+        │   │   ├── ImpactReport.java
+        │   │   ├── VolunteerHours.java
+        │   │   ├── Certificate.java              (abstract) Factory: Product
+        │   │   ├── ParticipationCertificate.java Factory: ConcreteProduct
+        │   │   └── AchievementCertificate.java   Factory: ConcreteProduct
         │   ├── lookups/                          (CRUD tables, edited by Admin)
         │   │   ├── Area.java
         │   │   ├── DonationStatus.java
@@ -44,12 +48,20 @@ FoodBridge/
         │   ├── factory/
         │   │   ├── DonationFactory.java          (abstract) Creator
         │   │   ├── MoneyDonationFactory.java     ConcreteCreator
-        │   │   └── FoodDonationFactory.java      ConcreteCreator
+        │   │   ├── FoodDonationFactory.java      ConcreteCreator
+        │   │   ├── CertificateFactory.java       (abstract) Creator
+        │   │   ├── ParticipationCertificateFactory.java  ConcreteCreator
+        │   │   └── AchievementCertificateFactory.java    ConcreteCreator
         │   ├── strategy/
         │   │   ├── DonationProcessingStrategy.java  (interface)
         │   │   ├── CashStrategy.java
         │   │   ├── CheckStrategy.java
-        │   │   └── OnlineStrategy.java
+        │   │   ├── OnlineStrategy.java
+        │   │   ├── VolunteerMatchingStrategy.java   (interface)
+        │   │   ├── SkillMatchStrategy.java
+        │   │   ├── AvailabilityMatchStrategy.java
+        │   │   ├── PreferenceMatchStrategy.java
+        │   │   └── MatchCriteria.java            helper
         │   ├── observer/
         │   │   ├── Subject.java                  (interface)
         │   │   ├── EventObserver.java            (interface)
@@ -62,12 +74,21 @@ FoodBridge/
         │       ├── ReceiptDecorator.java         (abstract) Decorator
         │       ├── ThankYouDecorator.java        ConcreteDecorator
         │       ├── TaxInfoDecorator.java         ConcreteDecorator
-        │       └── ReceiptOptions.java           helper (not in diagram)
+        │       ├── ReceiptOptions.java           helper
+        │       ├── CertificateComponent.java     (interface)
+        │       ├── BasicCertificate.java         ConcreteComponent
+        │       ├── CertificateDecorator.java     (abstract) Decorator
+        │       ├── HoursBreakdownDecorator.java  ConcreteDecorator
+        │       └── SignatureDecorator.java       ConcreteDecorator
         │
         ├── services/
         │   ├── EventService.java                 Observer client
         │   ├── DonationService.java              Strategy context + Factory client
-        │   └── ReceiptService.java               Decorator client
+        │   ├── ReceiptService.java               Decorator client
+        │   ├── VolunteerMatchingService.java     Strategy context
+        │   ├── CertificateService.java           Factory + Decorator client
+        │   ├── VolunteerService.java
+        │   └── PickupTaskService.java
         │
         ├── repositories/
         │   ├── Repository.java                   (generic CRUD interface)
@@ -84,11 +105,15 @@ FoodBridge/
         │   ├── DonationStatusRepository.java
         │   ├── EventTypeRepository.java
         │   ├── FoodCategoryRepository.java
-        │   └── UnitRepository.java
+        │   ├── UnitRepository.java
+        │   ├── VolunteerRepository.java
+        │   ├── CertificateRepository.java
+        │   └── JdbcSupport.java                  shared JDBC helpers
         │
         ├── controllers/
         │   ├── AuthController.java
         │   ├── UserController.java
+        │   ├── VolunteerController.java
         │   ├── DonationController.java
         │   ├── PickupController.java
         │   ├── BeneficiaryController.java
@@ -99,6 +124,8 @@ FoodBridge/
         │
         └── views/
             ├── View.java                         (interface)
+            ├── HomeView.java
+            ├── SwingSupport.java                 shared Swing helpers
             ├── auth/
             │   ├── LoginView.java
             │   ├── RegisterView.java
@@ -109,15 +136,19 @@ FoodBridge/
             │   ├── PayDonationView.java
             │   └── ReceiptView.java
             ├── volunteer/
+            │   ├── VolunteerPanelView.java
+            │   ├── VolunteerProfileView.java
             │   ├── PickupTasksView.java
-            │   └── EventRegistrationView.java
+            │   ├── EventRegistrationView.java
+            │   └── HoursCertificateView.java
             ├── beneficiary/
             │   ├── DonationRequestView.java
             │   └── ReceivedDistributionsView.java
             ├── admin/
             │   ├── ManageUsersView.java
             │   ├── ManageEventsView.java
-            │   └── ImpactReportView.java
+            │   ├── ImpactReportView.java
+            │   └── VolunteerAssignmentView.java
             └── lookups/
                 ├── AreaView.java
                 ├── DonationStatusView.java
@@ -126,7 +157,7 @@ FoodBridge/
                 └── UnitView.java
 ```
 
-Counts: 25 models + 19 pattern classes + 3 services + 15 repositories + 9 controllers + 20 views + Main = 92 files.
+Counts: 29 models + 32 pattern classes + 7 services + 18 repositories + 10 controllers + 26 views + Main = 123 files.
 
 Package name of each file = its folder, e.g. `src/foodbridge/models/users/Donor.java` starts with
 `package foodbridge.models.users;`

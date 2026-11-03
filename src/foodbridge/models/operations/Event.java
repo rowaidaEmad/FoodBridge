@@ -14,21 +14,68 @@ public class Event {
     private LocalDateTime date;
     private String location;
     private EventType type;
+    private String requiredSkill;
 
     public Event() {
-        // TODO: implement
-    }
-
-    public String getTitle() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     public void reschedule(LocalDateTime date) {
-        // TODO: implement
+        this.date = date;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public LocalDateTime getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDateTime date) {
+        this.date = date;
+    }
+
+    public String getLocation() {
+        return location;
     }
 
     public void setLocation(String location) {
-        // TODO: implement
+        this.location = location;
+    }
+
+    public EventType getType() {
+        return type;
+    }
+
+    public void setType(EventType type) {
+        this.type = type;
+    }
+
+    public String getRequiredSkill() {
+        return requiredSkill;
+    }
+
+    public void setRequiredSkill(String requiredSkill) {
+        this.requiredSkill = requiredSkill;
     }
 }

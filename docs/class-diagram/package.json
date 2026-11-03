@@ -1,0 +1,8 @@
+{
+  "name": "foodbridge-class-diagram",
+  "private": true,
+  "description": "Layout engine for the generated class diagram",
+  "dependencies": {
+    "elkjs": "0.9.3"
+  }
+}

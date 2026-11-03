@@ -13,15 +13,54 @@ public class Notification {
     private LocalDateTime createdAt;
 
     public Notification() {
-        // TODO: implement
+    }
+
+    public Notification(int recipientId, String message) {
+        this.recipientId = recipientId;
+        this.message = message;
     }
 
     public void markAsRead() {
-        // TODO: implement
+        read = true;
     }
 
     public boolean isRead() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return read;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getRecipientId() {
+        return recipientId;
+    }
+
+    public void setRecipientId(int recipientId) {
+        this.recipientId = recipientId;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public void setRead(boolean read) {
+        this.read = read;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
