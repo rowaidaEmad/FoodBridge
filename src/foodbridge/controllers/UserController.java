@@ -12,23 +12,43 @@ public class UserController {
     private UserRepository userRepository;
 
     public UserController() {
-        // TODO: implement
+        userRepository = new UserRepository();
     }
 
     public void updateContactInfo(int userId, String phone, String address) {
-        // TODO: implement
+        User user = requireUser(userId);
+        user.updateContactInfo(phone, address);
+        userRepository.update(user);
     }
 
     public void changeEmail(int userId, String email) {
-        // TODO: implement
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Enter an email address.");
+        }
+        User sameEmail = userRepository.findByEmail(email.trim());
+        if (sameEmail != null && sameEmail.getId() != userId) {
+            throw new IllegalArgumentException("Another account already uses this email.");
+        }
+        User user = requireUser(userId);
+        user.changeEmail(email.trim());
+        userRepository.update(user);
     }
 
     public void setActive(int userId, boolean active) {
-        // TODO: implement
+        User user = requireUser(userId);
+        user.setActive(active);
+        userRepository.update(user);
     }
 
     public List<User> listUsers() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return userRepository.findAll();
+    }
+
+    private User requireUser(int userId) {
+        User user = userRepository.findById(userId);
+        if (user == null) {
+            throw new IllegalArgumentException("No user with id " + userId);
+        }
+        return user;
     }
 }

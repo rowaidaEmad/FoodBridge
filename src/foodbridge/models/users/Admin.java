@@ -1,5 +1,6 @@
 package foodbridge.models.users;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -9,19 +10,21 @@ public class Admin extends User {
     private Set<String> permissions;
 
     public Admin() {
-        // TODO: implement
+        permissions = new HashSet<>();
     }
 
     public boolean hasPermission(String p) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return permissions.contains(p);
     }
 
     public void addPermission(String p) {
-        // TODO: implement
+        if (p == null || p.isBlank()) {
+            throw new IllegalArgumentException("Permission is required");
+        }
+        permissions.add(p.trim());
     }
 
     public void removePermission(String p) {
-        // TODO: implement
+        permissions.remove(p);
     }
 }

@@ -10,6 +10,7 @@ import foodbridge.models.users.Donor;
 
 /**
  * Helper (not drawn in the diagram): the 'details' / 'request' data passed to the factories.
+ * Money donations use amount + method; food donations use items, expiryDate and pickupWindow.
  */
 public class DonationDetails {
     private Donor donor;

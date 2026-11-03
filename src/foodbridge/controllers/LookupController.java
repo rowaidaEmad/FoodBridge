@@ -26,10 +26,14 @@ public class LookupController {
     public LookupController() {
         areaRepository = new AreaRepository();
         eventTypeRepository = new EventTypeRepository();
-        // TODO: create the other lookup repositories once they are implemented
+        donationStatusRepository = new DonationStatusRepository();
+        foodCategoryRepository = new FoodCategoryRepository();
+        unitRepository = new UnitRepository();
     }
 
     public void addArea(Area item) {
+        item.setCity(requireName(item.getCity()));
+        item.setDistrict(requireName(item.getDistrict()));
         areaRepository.add(item);
     }
 
@@ -38,6 +42,8 @@ public class LookupController {
     }
 
     public void updateArea(Area item) {
+        item.setCity(requireName(item.getCity()));
+        item.setDistrict(requireName(item.getDistrict()));
         areaRepository.update(item);
     }
 
@@ -46,20 +52,21 @@ public class LookupController {
     }
 
     public void addDonationStatus(DonationStatus item) {
-        // TODO: implement
+        item.setName(requireName(item.getName()));
+        donationStatusRepository.add(item);
     }
 
     public List<DonationStatus> listDonationStatuss() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return donationStatusRepository.findAll();
     }
 
     public void updateDonationStatus(DonationStatus item) {
-        // TODO: implement
+        item.setName(requireName(item.getName()));
+        donationStatusRepository.update(item);
     }
 
     public void deleteDonationStatus(int id) {
-        // TODO: implement
+        donationStatusRepository.delete(id);
     }
 
     public void addEventType(EventType item) {
@@ -81,37 +88,39 @@ public class LookupController {
     }
 
     public void addFoodCategory(FoodCategory item) {
-        // TODO: implement
+        item.setName(requireName(item.getName()));
+        foodCategoryRepository.add(item);
     }
 
     public List<FoodCategory> listFoodCategorys() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return foodCategoryRepository.findAll();
     }
 
     public void updateFoodCategory(FoodCategory item) {
-        // TODO: implement
+        item.setName(requireName(item.getName()));
+        foodCategoryRepository.update(item);
     }
 
     public void deleteFoodCategory(int id) {
-        // TODO: implement
+        foodCategoryRepository.delete(id);
     }
 
     public void addUnit(Unit item) {
-        // TODO: implement
+        item.setName(requireName(item.getName()));
+        unitRepository.add(item);
     }
 
     public List<Unit> listUnits() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return unitRepository.findAll();
     }
 
     public void updateUnit(Unit item) {
-        // TODO: implement
+        item.setName(requireName(item.getName()));
+        unitRepository.update(item);
     }
 
     public void deleteUnit(int id) {
-        // TODO: implement
+        unitRepository.delete(id);
     }
 
     private String requireName(String name) {

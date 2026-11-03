@@ -24,6 +24,7 @@ import foodbridge.models.users.Beneficiary;
 import foodbridge.models.users.Donor;
 import foodbridge.models.users.User;
 import foodbridge.models.users.Volunteer;
+import foodbridge.views.BackBar;
 import foodbridge.views.View;
 
 /**
@@ -90,18 +91,20 @@ public class RegisterView implements View {
         roleBox.addActionListener(e -> cards.show(rolePanel, (String) roleBox.getSelectedItem()));
 
         JButton registerButton = new JButton("Register");
-        JButton cancelButton = new JButton("Cancel");
         registerButton.addActionListener(e -> onRegister());
-        cancelButton.addActionListener(e -> dialog.dispose());
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttons.add(cancelButton);
         buttons.add(registerButton);
 
+        JPanel form = new JPanel(new BorderLayout(8, 8));
+        form.add(common, BorderLayout.NORTH);
+        form.add(rolePanel, BorderLayout.CENTER);
+        form.add(buttons, BorderLayout.SOUTH);
+
+        // "← Back" returns to the login window.
         JPanel content = new JPanel(new BorderLayout(8, 8));
-        content.setBorder(BorderFactory.createEmptyBorder(16, 16, 8, 16));
-        content.add(common, BorderLayout.NORTH);
-        content.add(rolePanel, BorderLayout.CENTER);
-        content.add(buttons, BorderLayout.SOUTH);
+        content.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        content.add(BackBar.create(dialog::dispose), BorderLayout.NORTH);
+        content.add(form, BorderLayout.CENTER);
 
         dialog.setTitle("FoodBridge - Register");
         dialog.setModal(true);

@@ -1,11 +1,12 @@
 package foodbridge.patterns.strategy;
 
-import foodbridge.models.donations.Donation;
 import foodbridge.models.donations.DonationProcessingResult;
+import foodbridge.models.donations.MoneyDonation;
 
+// Strategy pattern - Strategy
 /**
- * STRATEGY - Strategy. Returns a DonationProcessingResult.
+ * STRATEGY - Strategy. One implementation per payment method; returns a DonationProcessingResult.
  */
 public interface DonationProcessingStrategy {
-    DonationProcessingResult process(Donation donation);
+    DonationProcessingResult process(MoneyDonation donation);
 }

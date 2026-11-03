@@ -39,6 +39,7 @@ public class FoodCategory {
         this.name = name.trim();
     }
 
+    /** Shown in dropdowns. */
     @Override
     public String toString() {
         return name;

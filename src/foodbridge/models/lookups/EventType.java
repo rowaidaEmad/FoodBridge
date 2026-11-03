@@ -30,4 +30,10 @@ public class EventType {
     public void setName(String name) {
         this.name = name;
     }
+
+    /** Shown in dropdowns. */
+    @Override
+    public String toString() {
+        return name;
+    }
 }

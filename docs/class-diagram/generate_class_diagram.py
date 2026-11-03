@@ -1,8 +1,5 @@
 """Generates the FoodBridge class diagram as one connected SVG + PNG, coloured by design pattern.
 
-Describes the combined code of the Merged branch (volunteer, pickup, events, certificates) and the
-origin/donation-beneficiary branch (donations, payments, receipts, beneficiaries, reports).
-
 First time only:  npm install --prefix docs/class-diagram
 Then:             python docs/class-diagram/generate_class_diagram.py
 
@@ -289,7 +286,9 @@ cls("EventService", "observer", tags=[("observer", "Client")],
              "+ listRegistrations(volunteerId: int): List<EventRegistration>",
              "+ listRegistrationsForEvent(eventId: int): List<EventRegistration>",
              "+ markAttendance(registrationId: int, status: String, hours: double): void",
-             "+ announceChange(e: Event, msg: String): void", "- requireEvent(id: int): Event"])
+             "+ announceChange(e: Event, msg: String): void",
+             "- notifyRegistered(event: Event, message: String, registrations: List<EventRegistration>): void",
+             "- requireDetails(event: Event): void", "- requireEvent(id: int): Event"])
 cls("Subject", "observer", "interface", tags=[("observer", "Subject")],
     methods=["+ registerObserver(o: EventObserver): void", "+ removeObserver(o: EventObserver): void",
              "+ notifyObservers(): void"])

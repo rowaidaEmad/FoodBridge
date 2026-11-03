@@ -126,6 +126,7 @@ FoodBridge/
             ├── View.java                         (interface)
             ├── HomeView.java
             ├── SwingSupport.java                 shared Swing helpers
+            ├── ModuleView.java                   shared Swing worker and table helpers
             ├── auth/
             │   ├── LoginView.java
             │   ├── RegisterView.java
@@ -142,9 +143,11 @@ FoodBridge/
             │   ├── EventRegistrationView.java
             │   └── HoursCertificateView.java
             ├── beneficiary/
+            │   ├── BeneficiaryProfileView.java
             │   ├── DonationRequestView.java
             │   └── ReceivedDistributionsView.java
             ├── admin/
+            │   ├── ManageBeneficiariesView.java
             │   ├── ManageUsersView.java
             │   ├── ManageEventsView.java
             │   ├── ImpactReportView.java
@@ -157,7 +160,8 @@ FoodBridge/
                 └── UnitView.java
 ```
 
-Counts: 29 models + 32 pattern classes + 7 services + 18 repositories + 10 controllers + 26 views + Main = 123 files.
+Counts: 29 models + 32 pattern classes + 7 services + 18 repositories + 10 controllers + 32 views + Main = 129 files.
+Integration and Swing smoke tests live under `tests/`; generated outputs stay under `target/`.
 
 Package name of each file = its folder, e.g. `src/foodbridge/models/users/Donor.java` starts with
 `package foodbridge.models.users;`

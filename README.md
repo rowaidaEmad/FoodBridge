@@ -4,15 +4,10 @@ Food donation management system for a non-profit (CSE336 Major Task, SP 2026).
 Donors give food or money, volunteers pick it up and deliver it, beneficiaries receive it,
 and an admin manages users, lookup tables, events and impact reports.
 
-> **Status: skeleton only.** Every class has its fields and method signatures.
-> Method bodies are `// TODO: implement` (non-void methods throw `UnsupportedOperationException`)
-> so the project compiles while each team member implements their own module.
-> **Done so far:** `DatabaseManager` (PostgreSQL) and the full Event Type CRUD
-> (`EventType` → `EventTypeRepository` → `LookupController` → `EventTypeView`), merged from the
-> `FoodBridgeColdStart` branch; and Auth: Swing login/register screens (`LoginView`, `RegisterView`,
-> `HomeView`) → `AuthController` (salted PBKDF2 password hashes) → `UserRepository` (`users` +
-> role subtype tables); and the Volunteer module: profiles, skills and preferences, pickup tasks,
-> event registration and attendance, hours, certificates, notifications, and admin assignment.
+> **Status: implemented.** Auth, donations and payments, receipts, beneficiaries, volunteers,
+> pickup tasks, events, certificates, notifications, reports and the lookup tables all work through
+> Swing, controllers and PostgreSQL repositories. `NotificationLogger` is the one class left as a
+> skeleton; nothing uses it yet.
 
 ## Database (PostgreSQL)
 
@@ -125,3 +120,70 @@ own sub-package under `patterns/` when we start Phase 2.
 | Pickups, beneficiaries & reports | `PickupTask`, `Distribution`, `DonationRequest`, `ImpactReport`, their repositories, `PickupController`, `BeneficiaryController`, `ReportController`, `views/volunteer/PickupTasksView`, `views/beneficiary`, `ImpactReportView` |
 | Lookups & database (Singleton) | `models/lookups`, `DatabaseManager`, `Repository<T>`, lookup repositories, `LookupController`, `views/lookups` |
 | Volunteers (Strategy, Factory, Decorator, Observer) | `Volunteer`, `PickupTask`, `Event`, `EventRegistration`, `Notification`, `VolunteerHours`, the certificate classes, their patterns, services, repositories and controllers, `views/volunteer`, `VolunteerAssignmentView`, `NotificationsView` |
+
+## Receipts (Decorator)
+
+Donors can open **My donations (pay / cancel)**, select a donation and click **Receipt**.
+Money donations must be paid first; cancelled donations cannot receive a receipt. Food donations
+include their item details. Opening a receipt again reuses its saved number and issue date.
+
+The receipt window lets the donor independently select a thank-you message and tax information.
+`ReceiptService` wraps `BasicReceipt` in `ThankYouDecorator`, `TaxInfoDecorator`, or both, according
+to `ReceiptOptions`. Formatting choices do not modify the saved receipt. Tax information is a
+general recordkeeping note; the application has no tax deduction or food valuation rules.
+Receipt database operations run on a Swing worker.
+
+Run the workflows that join donations, pickups, events and accounts (same prerequisites as beneficiary verification):
+
+```powershell
+py tests/run-merged-tests.py
+py tests/run-merged-tests.py --gui
+```
+
+Run the isolated receipt database tests (same prerequisites):
+
+```powershell
+py tests/run-receipt-tests.py
+py tests/run-receipt-tests.py --gui
+```
+
+For only the decorator checks, after compiling the application to `target/receipt-classes`:
+
+```powershell
+javac --release 17 -cp target/receipt-classes -d target/receipt-classes tests/ReceiptDecoratorTest.java
+java -cp target/receipt-classes ReceiptDecoratorTest
+```
+
+## Beneficiary module
+
+After login, beneficiaries can open **My profile**, **My requests**, and **Received distributions**.
+Admins can open **Manage beneficiaries** (beneficiary list, request approval/rejection, delivery
+recording) and **Impact reports**. Admin accounts must already exist; registration does not create them.
+Load `database/seed.sql` for the food categories and units used by request forms.
+
+The module keeps the existing schema and domain relationships. Requests start as `PENDING` and
+admins can decide each request once as `APPROVED` or `REJECTED`. Approval and delivery are independent:
+recording a distribution does not automatically fulfil a request. Delivery forms select existing food
+donations and optionally a volunteer. Beneficiaries can only read their own requests and deliveries.
+Database operations in these screens run on Swing workers, and logout closes module windows.
+
+Distribution quantity remains the existing donation-level scalar. Item/unit allocation and inventory
+deduction are not implemented; mixed-item donations remain supported by `FoodDonation`. Reports count
+distinct beneficiary accounts as households served and count delivery records per volunteer over an
+inclusive date range. Unassigned deliveries count in delivery totals but have no volunteer row.
+Meals display as **N/A**, because no meal-count/conversion rule has been defined.
+
+### Beneficiary verification
+
+With Python 3.9+, JDK 17+, PostgreSQL tools and the Maven-cached PostgreSQL JDBC jar available, run:
+
+```powershell
+python tests/run-beneficiary-tests.py
+python tests/run-beneficiary-tests.py --gui
+```
+
+The runner creates a fresh PostgreSQL cluster under `target/beneficiary-verification`, loads the
+existing schema and lookup seeds, runs integration assertions, then stops and deletes that cluster.
+It overrides database settings only for its Java child process and never uses the application database.
+`--gui` also exercises real Swing screens and writes GUI captures under that target directory.
+Use `--postgres-bin` or `--jdbc-jar` to supply tools installed elsewhere; `--help` lists the options.

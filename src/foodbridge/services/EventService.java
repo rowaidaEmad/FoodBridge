@@ -22,8 +22,13 @@ public class EventService {
     private final NotificationRepository notificationRepository = new NotificationRepository();
     private final EventPublisher publisher = new EventPublisher();
 
+    /** Saves the new details and tells the registered volunteers. */
     public void updateEvent(int id, Event data) {
-        // TODO: implement
+        requireEvent(id);
+        data.setId(id);
+        requireDetails(data);
+        repository.update(data);
+        announceChange(data, "The event details have changed.");
     }
 
     public void registerVolunteer(int eventId, int volunteerId) {
@@ -71,8 +76,9 @@ public class EventService {
     }
 
     public long create(Event value) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        requireDetails(value);
+        repository.add(value);
+        return value.getId();
     }
 
     public Event findById(long id) {
@@ -87,22 +93,54 @@ public class EventService {
         if (msg == null || msg.isBlank()) {
             throw new IllegalArgumentException("Enter a message to announce.");
         }
-        publisher.clearObservers(e.getId());
-        for (EventRegistration registration : registrationRepository.findByEvent(e.getId())) {
-            publisher.registerObserver(e.getId(),
+        notifyRegistered(e, msg.trim(), registrationRepository.findByEvent(e.getId()));
+    }
+
+    /** Returns false if the event no longer exists. */
+    public boolean update(Event event) {
+        requireDetails(event);
+        if (repository.findById(event.getId()) == null) {
+            return false;
+        }
+        repository.update(event);
+        return true;
+    }
+
+    /**
+     * Deletes the event, which also removes its registrations, then tells the volunteers who were registered.
+     * Returns false if the event no longer exists.
+     */
+    public boolean cancelEvent(long eventId) {
+        int id = Math.toIntExact(eventId);
+        Event event = repository.findById(id);
+        if (event == null) {
+            return false;
+        }
+        List<EventRegistration> registrations = registrationRepository.findByEvent(id);
+        repository.delete(id);
+        notifyRegistered(event, "This event has been cancelled.", registrations);
+        return true;
+    }
+
+    private void notifyRegistered(Event event, String message, List<EventRegistration> registrations) {
+        publisher.clearObservers(event.getId());
+        for (EventRegistration registration : registrations) {
+            publisher.registerObserver(event.getId(),
                     new VolunteerObserver(registration.getVolunteer().getId(), notificationRepository));
         }
-        publisher.updateEvent(e, msg.trim());
+        publisher.updateEvent(event, message);
     }
 
-    public boolean update(Event event) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    public boolean cancelEvent(long eventId) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+    private void requireDetails(Event event) {
+        if (event == null || event.getTitle() == null || event.getTitle().isBlank()) {
+            throw new IllegalArgumentException("Enter the event title.");
+        }
+        if (event.getDate() == null) {
+            throw new IllegalArgumentException("Enter the event date.");
+        }
+        if (event.getType() == null) {
+            throw new IllegalArgumentException("Choose an event type.");
+        }
     }
 
     private Event requireEvent(int id) {

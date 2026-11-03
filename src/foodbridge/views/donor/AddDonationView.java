@@ -1,162 +1,270 @@
 package foodbridge.views.donor;
 
+import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JFrame;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.table.DefaultTableModel;
 
 import foodbridge.controllers.DonationController;
 import foodbridge.models.donations.DonationDetails;
 import foodbridge.models.donations.FoodItem;
+import foodbridge.models.donations.MoneyDonation;
 import foodbridge.models.lookups.Area;
 import foodbridge.models.lookups.FoodCategory;
 import foodbridge.models.lookups.Unit;
 import foodbridge.models.users.Donor;
-import foodbridge.models.users.User;
-import foodbridge.views.SwingSupport;
+import foodbridge.views.BackBar;
+import foodbridge.views.DatePicker;
 import foodbridge.views.View;
 
 /**
- * Screen; talks only to DonationController. Any logged-in user (donor or volunteer) can donate food.
+ * Screen; talks only to DonationController. Money tab (amount + method) and Food tab (items).
  */
 public class AddDonationView implements View {
     private DonationController donationController;
-    private final User user;
-    private final JFrame frame = new JFrame("FoodBridge - Donate Food");
-    private final JTextField nameField = new JTextField(20);
-    private final JTextField quantityField = new JTextField(20);
-    private final JComboBox<Unit> unitBox = new JComboBox<>();
-    private final JComboBox<FoodCategory> categoryBox = new JComboBox<>();
-    private final JTextField expiryField = new JTextField(20);
-    private final JTextField allergensField = new JTextField(20);
+    private final Donor donor;
+    private final JDialog dialog = new JDialog();
+
+    private final JTextField amountField = new JTextField(12);
+    private final JComboBox<String> methodBox = new JComboBox<>(MoneyDonation.METHODS.toArray(new String[0]));
+
+    private final List<FoodItem> items = new ArrayList<>();
+    private final DefaultTableModel itemsModel = new DefaultTableModel(
+            new Object[] { "Name", "Quantity", "Unit", "Category", "Allergens", "Expiry" }, 0) {
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false;
+        }
+    };
+    private final JTable itemsTable = new JTable(itemsModel);
+    private final JTextField itemName = new JTextField(10);
+    private final JTextField itemQuantity = new JTextField(5);
+    private final JComboBox<Unit> itemUnit = new JComboBox<>();
+    private final JComboBox<FoodCategory> itemCategory = new JComboBox<>();
+    private final JTextField itemAllergens = new JTextField(8);
+    private final DatePicker itemExpiry = new DatePicker();
+    private final DatePicker expiryField = new DatePicker();
     private final JComboBox<Area> areaBox = new JComboBox<>();
-    private final JTextField windowField = new JTextField(20);
+    private final JTextField pickupField = new JTextField(14);
 
-    public AddDonationView(User user, DonationController donationController) {
-        this.user = user;
+    public AddDonationView(DonationController donationController, Donor donor) {
         this.donationController = donationController;
+        this.donor = donor;
+        // Food that is already expired can't be donated.
+        itemExpiry.setMinDate(LocalDate.now());
+        expiryField.setMinDate(LocalDate.now());
 
-        JButton donateButton = new JButton("Donate");
-        donateButton.addActionListener(e -> donate());
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.addTab("Money", moneyPanel());
+        tabs.addTab("Food", foodPanel());
 
-        JPanel form = new JPanel(new GridLayout(0, 2, 8, 8));
-        form.setBorder(BorderFactory.createEmptyBorder(16, 16, 8, 16));
-        form.add(new JLabel("Food item:"));
-        form.add(nameField);
-        form.add(new JLabel("Quantity:"));
-        form.add(quantityField);
-        form.add(new JLabel("Unit:"));
-        form.add(unitBox);
-        form.add(new JLabel("Category:"));
-        form.add(categoryBox);
-        form.add(new JLabel("Expiry date (yyyy-mm-dd):"));
-        form.add(expiryField);
-        form.add(new JLabel("Allergens (optional):"));
-        form.add(allergensField);
-        form.add(new JLabel("Pickup area:"));
-        form.add(areaBox);
-        form.add(new JLabel("Pickup window (e.g. weekends):"));
-        form.add(windowField);
+        JPanel page = new JPanel(new BorderLayout(4, 4));
+        page.setBorder(BorderFactory.createEmptyBorder(8, 8, 0, 8));
+        page.add(BackBar.create(dialog::dispose), BorderLayout.NORTH);
+        page.add(tabs, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttons.add(donateButton);
-        JPanel content = new JPanel(new java.awt.BorderLayout());
-        content.add(form, java.awt.BorderLayout.CENTER);
-        content.add(buttons, java.awt.BorderLayout.SOUTH);
-
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.add(content);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
+        dialog.setTitle("FoodBridge - Add donation");
+        dialog.setModal(true);
+        dialog.add(page);
+        dialog.setSize(860, 520);
+        dialog.setLocationRelativeTo(null);
     }
 
     @Override
     public void show() {
-        SwingSupport.attempt(frame, () -> {
-            donationController.listUnits().forEach(unitBox::addItem);
-            donationController.listCategories().forEach(categoryBox::addItem);
-            donationController.listAreas().forEach(areaBox::addItem);
-            if (user.getArea() != null) {
-                for (int i = 0; i < areaBox.getItemCount(); i++) {
-                    if (areaBox.getItemAt(i).getId() == user.getArea().getId()) {
-                        areaBox.setSelectedIndex(i);
-                    }
+        try {
+            for (Unit u : donationController.listUnits()) {
+                itemUnit.addItem(u);
+            }
+            for (FoodCategory c : donationController.listFoodCategories()) {
+                itemCategory.addItem(c);
+            }
+            // Volunteers see pickup tasks by area, so default to the area the donor lives in.
+            for (Area a : donationController.listAreas()) {
+                areaBox.addItem(a);
+                if (donor.getArea() != null && donor.getArea().getId() == a.getId()) {
+                    areaBox.setSelectedItem(a);
                 }
             }
-            frame.setVisible(true);
-        });
+        } catch (RuntimeException ex) {
+            showError(ex.getMessage());
+            return;
+        }
+        dialog.setVisible(true);
     }
 
-    private void donate() {
-        SwingSupport.attempt(frame, () -> {
-            DonationDetails details = buildDetails();
-            int id = donationController.createDonation("FOOD", details);
-            JOptionPane.showMessageDialog(frame, "Thank you! Donation #" + id + " is posted for pickup.");
-            frame.dispose();
-        });
-    }
+    private JPanel moneyPanel() {
+        JPanel form = new JPanel(new GridLayout(2, 2, 8, 8));
+        form.add(new JLabel("Amount:"));
+        form.add(amountField);
+        form.add(new JLabel("Payment method:"));
+        form.add(methodBox);
 
-    private DonationDetails buildDetails() {
-        if (nameField.getText().isBlank()) {
-            throw new IllegalArgumentException("Enter the food item.");
-        }
-        if (categoryBox.getSelectedItem() == null || unitBox.getSelectedItem() == null) {
-            throw new IllegalArgumentException("No categories or units found; run database/seed.sql.");
-        }
-        double quantity;
-        try {
-            quantity = Double.parseDouble(quantityField.getText().trim());
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Enter the quantity as a number.");
-        }
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be more than 0.");
-        }
-        LocalDate expiry = parseExpiry();
-
-        FoodItem item = new FoodItem();
-        item.setName(nameField.getText().trim());
-        item.setQuantity(quantity);
-        item.setCategory((FoodCategory) categoryBox.getSelectedItem());
-        item.setUnit((Unit) unitBox.getSelectedItem());
-        item.setAllergens(allergensField.getText().isBlank() ? null : allergensField.getText().trim());
-        item.setExpiryDate(expiry);
-
-        Donor donor = new Donor();
-        donor.setId(user.getId());
-        donor.setName(user.getName());
-
-        DonationDetails details = new DonationDetails();
-        details.setDonor(donor);
-        details.setItems(List.of(item));
-        details.setExpiryDate(expiry);
-        details.setArea((Area) areaBox.getSelectedItem());
-        details.setPickupWindow(windowField.getText().isBlank() ? null : windowField.getText().trim());
-        return details;
-    }
-
-    private LocalDate parseExpiry() {
-        if (expiryField.getText().isBlank()) {
-            return null;
-        }
-        try {
-            LocalDate expiry = LocalDate.parse(expiryField.getText().trim());
-            if (expiry.isBefore(LocalDate.now())) {
-                throw new IllegalArgumentException("The expiry date is already past.");
+        JButton save = new JButton("Save money donation");
+        save.addActionListener(e -> {
+            try {
+                DonationDetails details = new DonationDetails();
+                details.setDonor(donor);
+                details.setAmount(new BigDecimal(amountField.getText().trim()));
+                details.setMethod((String) methodBox.getSelectedItem());
+                int id = donationController.createDonation("money", details);
+                JOptionPane.showMessageDialog(dialog,
+                        "Money donation #" + id + " saved (Posted, unpaid).\nPay it from 'My donations'.");
+                dialog.dispose();
+            } catch (NumberFormatException ex) {
+                showError("Enter a valid amount, e.g. 500");
+            } catch (RuntimeException ex) {
+                showError(ex.getMessage());
             }
-            return expiry;
-        } catch (DateTimeParseException e) {
-            throw new IllegalArgumentException("Enter the expiry date as yyyy-mm-dd.");
+        });
+
+        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+        panel.add(form, BorderLayout.NORTH);
+        panel.add(right(save), BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel foodPanel() {
+        itemUnit.setRenderer(nameRenderer());
+        itemCategory.setRenderer(nameRenderer());
+
+        // Two rows so every field and the Add button fit in the window width.
+        JPanel firstRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        firstRow.add(new JLabel("Name"));
+        firstRow.add(itemName);
+        firstRow.add(new JLabel("Qty"));
+        firstRow.add(itemQuantity);
+        firstRow.add(new JLabel("Unit"));
+        firstRow.add(itemUnit);
+        firstRow.add(new JLabel("Category"));
+        firstRow.add(itemCategory);
+
+        JButton addItem = new JButton("Add item");
+        addItem.addActionListener(e -> onAddItem());
+        JPanel secondRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        secondRow.add(new JLabel("Allergens"));
+        secondRow.add(itemAllergens);
+        secondRow.add(new JLabel("Expiry"));
+        secondRow.add(itemExpiry);
+        secondRow.add(addItem);
+
+        JPanel itemRow = new JPanel(new GridLayout(2, 1));
+        itemRow.setBorder(BorderFactory.createTitledBorder("New item"));
+        itemRow.add(firstRow);
+        itemRow.add(secondRow);
+
+        JPanel donationRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        donationRow.add(new JLabel("Donation expiry:"));
+        donationRow.add(expiryField);
+        donationRow.add(new JLabel("Pickup area:"));
+        donationRow.add(areaBox);
+        donationRow.add(new JLabel("Pickup window:"));
+        donationRow.add(pickupField);
+
+        JButton removeItem = new JButton("Remove selected item");
+        removeItem.addActionListener(e -> {
+            int row = itemsTable.getSelectedRow();
+            if (row >= 0) {
+                items.remove(row);
+                itemsModel.removeRow(row);
+            }
+        });
+        JButton save = new JButton("Save food donation");
+        save.addActionListener(e -> onSaveFood());
+
+        JPanel bottom = new JPanel(new BorderLayout());
+        bottom.add(donationRow, BorderLayout.NORTH);
+        JPanel buttons = right(removeItem);
+        buttons.add(save);
+        bottom.add(buttons, BorderLayout.SOUTH);
+
+        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        panel.add(itemRow, BorderLayout.NORTH);
+        panel.add(new JScrollPane(itemsTable), BorderLayout.CENTER);
+        panel.add(bottom, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private void onAddItem() {
+        try {
+            FoodItem item = new FoodItem();
+            item.setName(itemName.getText());
+            item.setQuantity(Double.parseDouble(itemQuantity.getText().trim()));
+            item.setUnit((Unit) itemUnit.getSelectedItem());
+            item.setCategory((FoodCategory) itemCategory.getSelectedItem());
+            item.setAllergens(itemAllergens.getText().isBlank() ? null : itemAllergens.getText().trim());
+            item.setExpiryDate(itemExpiry.getDate());
+            items.add(item);
+            itemsModel.addRow(new Object[] { item.getName(), item.getQuantity(), item.getUnit().getName(),
+                    item.getCategory().getName(), item.getAllergens(), item.getExpiryDate() });
+            itemName.setText("");
+            itemQuantity.setText("");
+            itemAllergens.setText("");
+            itemExpiry.setDate(null);
+        } catch (NumberFormatException ex) {
+            showError("Enter a valid quantity, e.g. 10");
+        } catch (RuntimeException ex) {
+            showError(ex.getMessage());
         }
+    }
+
+    private void onSaveFood() {
+        if (items.isEmpty()) {
+            showError("Add at least one item.");
+            return;
+        }
+        try {
+            DonationDetails details = new DonationDetails();
+            details.setDonor(donor);
+            details.setItems(items);
+            details.setExpiryDate(expiryField.getDate());
+            details.setArea((Area) areaBox.getSelectedItem());
+            details.setPickupWindow(pickupField.getText().isBlank() ? null : pickupField.getText().trim());
+            int id = donationController.createDonation("food", details);
+            JOptionPane.showMessageDialog(dialog, "Food donation #" + id + " saved with " + items.size() + " item(s).");
+            dialog.dispose();
+        } catch (RuntimeException ex) {
+            showError(ex.getMessage());
+        }
+    }
+
+    private static javax.swing.ListCellRenderer<Object> nameRenderer() {
+        return new javax.swing.DefaultListCellRenderer() {
+            @Override
+            public java.awt.Component getListCellRendererComponent(javax.swing.JList<?> list, Object value,
+                    int index, boolean selected, boolean focus) {
+                Object label = value instanceof Unit u ? u.getName()
+                        : value instanceof FoodCategory c ? c.getName() : value;
+                return super.getListCellRendererComponent(list, label, index, selected, focus);
+            }
+        };
+    }
+
+    private static JPanel right(JButton button) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panel.add(button);
+        return panel;
+    }
+
+    private void showError(String message) {
+        JOptionPane.showMessageDialog(dialog, message, "Cannot save", JOptionPane.ERROR_MESSAGE);
     }
 }

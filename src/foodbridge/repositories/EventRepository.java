@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +29,19 @@ public class EventRepository implements Repository<Event> {
 
     @Override
     public void add(Event item) {
-        // TODO: implement
+        try (Connection c = db.getConnection();
+                PreparedStatement ps = c.prepareStatement(
+                        "INSERT INTO events(title, description, event_date, location, event_type_id, required_skill)"
+                        + " VALUES (?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+            bind(ps, item);
+            ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                rs.next();
+                item.setId(rs.getInt(1));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not add event: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -61,12 +74,41 @@ public class EventRepository implements Repository<Event> {
 
     @Override
     public void update(Event item) {
-        // TODO: implement
+        try (Connection c = db.getConnection();
+                PreparedStatement ps = c.prepareStatement(
+                        "UPDATE events SET title = ?, description = ?, event_date = ?, location = ?,"
+                        + " event_type_id = ?, required_skill = ? WHERE id = ?")) {
+            bind(ps, item);
+            ps.setInt(7, item.getId());
+            if (ps.executeUpdate() == 0) {
+                throw new IllegalArgumentException("No event with id " + item.getId());
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not update event: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public void delete(int id) {
-        // TODO: implement
+        // Registrations are removed by ON DELETE CASCADE.
+        try (Connection c = db.getConnection();
+                PreparedStatement ps = c.prepareStatement("DELETE FROM events WHERE id = ?")) {
+            ps.setInt(1, id);
+            if (ps.executeUpdate() == 0) {
+                throw new IllegalArgumentException("No event with id " + id);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not delete event: " + e.getMessage(), e);
+        }
+    }
+
+    private void bind(PreparedStatement ps, Event item) throws SQLException {
+        ps.setString(1, item.getTitle());
+        ps.setString(2, item.getDescription());
+        ps.setTimestamp(3, JdbcSupport.toTimestamp(item.getDate()));
+        ps.setString(4, item.getLocation());
+        ps.setInt(5, item.getType().getId());
+        ps.setString(6, item.getRequiredSkill());
     }
 
     private Event map(ResultSet rs) throws SQLException {

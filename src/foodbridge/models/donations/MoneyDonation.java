@@ -2,6 +2,7 @@ package foodbridge.models.donations;
 
 import java.util.List;
 
+import foodbridge.models.lookups.DonationStatus;
 import foodbridge.models.users.Donor;
 
 // Factory Method pattern - ConcreteProduct
@@ -58,6 +59,12 @@ public class MoneyDonation extends Donation {
         }
         this.transactionId = transactionId.trim();
         this.paid = true;
+    }
+
+    /** A paid donation cannot be cancelled (the money was already taken). */
+    @Override
+    public boolean cancel(DonationStatus cancelled) {
+        return !paid && super.cancel(cancelled);
     }
 
     @Override

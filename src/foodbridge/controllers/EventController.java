@@ -2,8 +2,10 @@ package foodbridge.controllers;
 
 import java.util.List;
 
+import foodbridge.models.lookups.EventType;
 import foodbridge.models.operations.Event;
 import foodbridge.models.operations.EventRegistration;
+import foodbridge.repositories.EventTypeRepository;
 import foodbridge.services.EventService;
 
 /**
@@ -13,12 +15,11 @@ public class EventController {
     private final EventService eventService = new EventService();
 
     public long createEvent(Event event) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return eventService.create(event);
     }
 
     public void updateEvent(int id, Event data) {
-        // TODO: implement
+        eventService.updateEvent(id, data);
     }
 
     public void registerVolunteer(int eventId, int volunteerId) {
@@ -42,11 +43,14 @@ public class EventController {
     }
 
     public boolean cancelEvent(long eventId) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return eventService.cancelEvent(eventId);
     }
 
     public List<Event> listEvents() {
         return eventService.list();
+    }
+
+    public List<EventType> listEventTypes() {
+        return new EventTypeRepository().findAll();
     }
 }

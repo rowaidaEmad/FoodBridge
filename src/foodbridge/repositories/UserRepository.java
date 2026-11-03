@@ -113,12 +113,7 @@ public class UserRepository implements Repository<User> {
                 if (ps.executeUpdate() == 0) {
                     throw new IllegalArgumentException("No user with id " + item.getId());
                 }
-                if (item instanceof Volunteer v) {
-                    updateVolunteer(c, v);
-                } else {
-                    deleteSubtype(c, item);
-                    insertSubtype(c, item);
-                }
+                updateSubtype(c, item);
                 c.commit();
             } catch (SQLException | RuntimeException e) {
                 c.rollback();
@@ -152,6 +147,18 @@ public class UserRepository implements Repository<User> {
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Could not create donor profile: " + e.getMessage(), e);
+        }
+    }
+
+    /** Updates beneficiary fields without deleting a subtype row referenced by deliveries. */
+    public void updateBeneficiaryProfile(int id, int householdSize, String needs) {
+        if (householdSize <= 0) throw new IllegalArgumentException("Household size must be at least 1.");
+        try (Connection c = db.getConnection(); PreparedStatement p = c.prepareStatement(
+                "UPDATE beneficiaries SET household_size=?, needs=? WHERE user_id=?")) {
+            p.setInt(1, householdSize); p.setString(2, needs); p.setInt(3, id);
+            if (p.executeUpdate() != 1) throw new IllegalArgumentException("Beneficiary no longer exists.");
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not save beneficiary profile. Check the database connection.", e);
         }
     }
 
@@ -246,26 +253,36 @@ public class UserRepository implements Repository<User> {
         }
     }
 
-    private void updateVolunteer(Connection c, Volunteer v) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(
-                "UPDATE volunteers SET availability = ?, has_transport = ? WHERE user_id = ?")) {
-            ps.setString(1, v.getAvailability());
-            ps.setBoolean(2, v.hasTransport());
-            ps.setInt(3, v.getId());
-            ps.executeUpdate();
-        }
-    }
-
-    private void deleteSubtype(Connection c, User item) throws SQLException {
-        String table = switch (roleOf(item)) {
-            case "DONOR" -> "donors";
-            case "VOLUNTEER" -> "volunteers";
-            case "BENEFICIARY" -> "beneficiaries";
-            default -> "admins";
-        };
-        try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + table + " WHERE user_id = ?")) {
-            ps.setInt(1, item.getId());
-            ps.executeUpdate();
+    /** Updates in place: donations, tasks and deliveries reference the subtype row, so it must not be replaced. */
+    private void updateSubtype(Connection c, User item) throws SQLException {
+        if (item instanceof Donor d) {
+            try (PreparedStatement ps = c.prepareStatement(
+                    "UPDATE donors SET donor_type = ?, organization_name = ? WHERE user_id = ?")) {
+                ps.setString(1, d.getDonorType());
+                ps.setString(2, d.getOrganizationName());
+                ps.setInt(3, d.getId());
+                ps.executeUpdate();
+            }
+        } else if (item instanceof Volunteer v) {
+            try (PreparedStatement ps = c.prepareStatement(
+                    "UPDATE volunteers SET availability = ?, has_transport = ? WHERE user_id = ?")) {
+                ps.setString(1, v.getAvailability());
+                ps.setBoolean(2, v.hasTransport());
+                ps.setInt(3, v.getId());
+                ps.executeUpdate();
+            }
+        } else if (item instanceof Beneficiary b) {
+            try (PreparedStatement ps = c.prepareStatement(
+                    "UPDATE beneficiaries SET household_size = ?, needs = ? WHERE user_id = ?")) {
+                if (b.getHouseholdSize() > 0) {
+                    ps.setInt(1, b.getHouseholdSize());
+                } else {
+                    ps.setNull(1, Types.INTEGER);
+                }
+                ps.setString(2, b.getNeeds());
+                ps.setInt(3, b.getId());
+                ps.executeUpdate();
+            }
         }
     }
 
