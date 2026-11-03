@@ -1,36 +1,28 @@
 package foodbridge.models.donations;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
-/**
- * FACTORY METHOD - ConcreteProduct. Contains 1..* FoodItem (composition).
- */
+/** Factory Method concrete product. Contains food items. */
 public class FoodDonation extends Donation {
-    private List<FoodItem> items;
+    private final List<FoodItem> items = new ArrayList<>();
     private LocalDate expiryDate;
     private String pickupWindow;
-
-    public FoodDonation() {
-        // TODO: implement
-    }
-
-    public void addItem(FoodItem item) {
-        // TODO: implement
-    }
-
-    public void removeItem(FoodItem item) {
-        // TODO: implement
-    }
-
-    public boolean isExpired() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
-    public String getType() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+    public FoodDonation() { }
+    public void addItem(FoodItem item) { items.add(Objects.requireNonNull(item)); }
+    public void removeItem(FoodItem item) { items.remove(item); }
+    public List<FoodItem> getItems() { return List.copyOf(items); }
+    public LocalDate getExpiryDate() { return expiryDate; }
+    public void setExpiryDate(LocalDate date) { expiryDate = date; }
+    public String getPickupWindow() { return pickupWindow; }
+    public void setPickupWindow(String value) { pickupWindow = value; }
+    public boolean isExpired() { return expiryDate != null && expiryDate.isBefore(LocalDate.now()); }
+    @Override public String getType() { return "FOOD"; }
+    @Override public String toString() {
+        String contents = items.stream().map(FoodItem::getInfo).collect(Collectors.joining(", "));
+        return "#" + id + (contents.isEmpty() ? " - Food donation" : " - " + contents);
     }
 }

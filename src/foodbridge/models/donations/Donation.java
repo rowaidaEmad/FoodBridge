@@ -17,13 +17,18 @@ public abstract class Donation {
     protected Area area;
 
     public int getId() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return id;
     }
 
     public void updateStatus(DonationStatus s) {
-        // TODO: implement
+        status = s;
     }
+
+    public void setId(int id) { this.id = id; }
+
+    public LocalDate getDate() { return date; }
+
+    public void setDate(LocalDate date) { this.date = date; }
 
     public abstract String getType();
 }
