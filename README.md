@@ -9,7 +9,9 @@ and an admin manages users, lookup tables, events and impact reports.
 > so the project compiles while each team member implements their own module.
 > **Done so far:** `DatabaseManager` (PostgreSQL) and the full Event Type CRUD
 > (`EventType` → `EventTypeRepository` → `LookupController` → `EventTypeView`), merged from the
-> `FoodBridgeColdStart` branch.
+> `FoodBridgeColdStart` branch; and Auth: Swing login/register screens (`LoginView`, `RegisterView`,
+> `HomeView`) → `AuthController` (salted PBKDF2 password hashes) → `UserRepository` (`users` +
+> role subtype tables).
 
 ## Database (PostgreSQL)
 
@@ -49,7 +51,8 @@ Maven import to finish, then open `src/foodbridge/Main.java` → **Run** (or F5 
 mvn compile exec:java
 ```
 
-Running opens the Event Types console menu (add / list / rename / delete), saved in PostgreSQL.
+Running opens the **Login** window. Use **Create account** to register as a Donor, Volunteer or
+Beneficiary (saved in PostgreSQL), then log in. Admin accounts are not created from the screen.
 
 ## MVC layers
 

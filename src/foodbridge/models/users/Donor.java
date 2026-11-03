@@ -8,20 +8,21 @@ public class Donor extends User {
     private String organizationName;
 
     public Donor() {
-        // TODO: implement
     }
 
     public String getDonorType() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return donorType;
     }
 
     public void setDonorType(String type) {
-        // TODO: implement
+        this.donorType = type;
     }
 
     public String getOrganizationName() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return organizationName;
+    }
+
+    public void setOrganizationName(String organizationName) {
+        this.organizationName = organizationName;
     }
 }

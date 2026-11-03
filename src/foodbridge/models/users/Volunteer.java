@@ -9,23 +9,32 @@ public class Volunteer extends User {
     private double totalHours;
 
     public Volunteer() {
-        // TODO: implement
+    }
+
+    public String getAvailability() {
+        return availability;
     }
 
     public void setAvailability(String value) {
-        // TODO: implement
+        this.availability = value;
+    }
+
+    public boolean hasTransport() {
+        return hasTransport;
     }
 
     public void setHasTransport(boolean flag) {
-        // TODO: implement
+        this.hasTransport = flag;
     }
 
     public void addHours(double hours) {
-        // TODO: implement
+        if (hours < 0) {
+            throw new IllegalArgumentException("Hours cannot be negative");
+        }
+        totalHours += hours;
     }
 
     public double getTotalHours() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return totalHours;
     }
 }

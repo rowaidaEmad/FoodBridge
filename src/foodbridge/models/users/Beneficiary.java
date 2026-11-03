@@ -8,14 +8,24 @@ public class Beneficiary extends User {
     private String needs;
 
     public Beneficiary() {
-        // TODO: implement
+    }
+
+    public int getHouseholdSize() {
+        return householdSize;
     }
 
     public void setHouseholdSize(int size) {
-        // TODO: implement
+        if (size <= 0) {
+            throw new IllegalArgumentException("Household size must be at least 1");
+        }
+        this.householdSize = size;
+    }
+
+    public String getNeeds() {
+        return needs;
     }
 
     public void updateNeeds(String needs) {
-        // TODO: implement
+        this.needs = needs;
     }
 }

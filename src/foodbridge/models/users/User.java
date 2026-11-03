@@ -15,28 +15,71 @@ public abstract class User {
     protected String phone;
     protected String address;
     protected Area area;
-    protected boolean active;
+    protected boolean active = true;
     protected LocalDateTime createdAt;
 
     public int getId() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getEmail() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return email;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public Area getArea() {
+        return area;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
     public void updateContactInfo(String phone, String address) {
-        // TODO: implement
+        this.phone = phone;
+        this.address = address;
     }
 
     public void changeEmail(String email) {
-        // TODO: implement
+        this.email = email;
     }
 
     public void setActive(boolean active) {
-        // TODO: implement
+        this.active = active;
     }
 }

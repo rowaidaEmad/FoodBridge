@@ -1,7 +1,9 @@
 package foodbridge;
 
-import foodbridge.controllers.LookupController;
-import foodbridge.views.lookups.EventTypeView;
+import javax.swing.SwingUtilities;
+
+import foodbridge.controllers.AuthController;
+import foodbridge.views.auth.LoginView;
 
 /**
  * Entry point. Wire the views, controllers and services here once modules are implemented.
@@ -9,8 +11,7 @@ import foodbridge.views.lookups.EventTypeView;
 public class Main {
     public static void main(String[] args) {
         System.out.println("FoodBridge started");
-        // TODO: show LoginView and route to the right panel by role.
-        // Until then, open the Event Types screen (the first module wired to the database).
-        new EventTypeView(new LookupController()).show();
+        // TODO: route to the right panel by role from HomeView.
+        SwingUtilities.invokeLater(() -> new LoginView(new AuthController()).show());
     }
 }
