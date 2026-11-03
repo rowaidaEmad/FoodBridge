@@ -21,6 +21,13 @@ public class FoodDonation extends Donation {
         super(donor);
     }
 
+    /**
+     * Id-only reference used when another record points at a donation (e.g. DistributionRepository).
+     * It has no donor, so DonationRepository refuses to save it; new donations use FoodDonation(Donor).
+     */
+    public FoodDonation() {
+    }
+
     public void addItem(FoodItem item) {
         if (item == null) {
             throw new IllegalArgumentException("Item is required");
@@ -70,6 +77,19 @@ public class FoodDonation extends Donation {
     @Override
     public String getType() {
         return "food";
+    }
+
+    /** Shown in the beneficiary delivery form, e.g. "#12 - Rice - 10 kg - ...". */
+    @Override
+    public String toString() {
+        StringBuilder text = new StringBuilder("#" + id);
+        if (items.isEmpty()) {
+            return text.append(" - Food donation").toString();
+        }
+        for (int i = 0; i < items.size(); i++) {
+            text.append(i == 0 ? " - " : ", ").append(items.get(i).getInfo());
+        }
+        return text.toString();
     }
 
     /** e.g. "Food donation - 20 meals - Posted", or "... - 3 items - ..." when the units differ. */

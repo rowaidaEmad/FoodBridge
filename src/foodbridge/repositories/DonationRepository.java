@@ -83,6 +83,37 @@ public class DonationRepository implements Repository<Donation> {
         }
     }
 
+    /** Food donations that can still be delivered (not Cancelled), newest first; used by the beneficiary module. */
+    public List<FoodDonation> findFoodDonations() {
+        return findFood("", 0);
+    }
+
+    /** Returns null if the donation does not exist, is not food, or was cancelled. */
+    public FoodDonation findFoodById(int id) {
+        List<FoodDonation> found = findFood(" AND d.id = ?", id);
+        return found.isEmpty() ? null : found.get(0);
+    }
+
+    private List<FoodDonation> findFood(String filter, int id) {
+        List<FoodDonation> list = new ArrayList<>();
+        String sql = SELECT_DONATIONS + " WHERE d.donation_type = 'FOOD' AND s.name <> ?" + filter
+                + " ORDER BY d.id DESC";
+        try (Connection c = db.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, DonationStatus.CANCELLED);
+            if (id > 0) {
+                ps.setInt(2, id);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add((FoodDonation) map(c, rs, loadDonor(rs.getInt("donor_id"))));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not load food donations: " + e.getMessage(), e);
+        }
+        return list;
+    }
+
     public List<Donation> findByDonor(int donorId) {
         List<Donation> list = new ArrayList<>();
         try (Connection c = db.getConnection();

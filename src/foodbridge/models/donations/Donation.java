@@ -18,6 +18,10 @@ public abstract class Donation {
     protected DonationStatus status;
     protected Area area;
 
+    /** For id-only references loaded by other modules (no donor); never saved. */
+    protected Donation() {
+    }
+
     protected Donation(Donor donor) {
         if (donor == null) {
             throw new IllegalArgumentException("A donation needs a donor");

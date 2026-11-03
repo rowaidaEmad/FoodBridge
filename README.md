@@ -4,14 +4,11 @@ Food donation management system for a non-profit (CSE336 Major Task, SP 2026).
 Donors give food or money, volunteers pick it up and deliver it, beneficiaries receive it,
 and an admin manages users, lookup tables, events and impact reports.
 
-> **Status: skeleton only.** Every class has its fields and method signatures.
-> Method bodies are `// TODO: implement` (non-void methods throw `UnsupportedOperationException`)
-> so the project compiles while each team member implements their own module.
-> **Done so far:** `DatabaseManager` (PostgreSQL) and the full Event Type CRUD
-> (`EventType` → `EventTypeRepository` → `LookupController` → `EventTypeView`), merged from the
-> `FoodBridgeColdStart` branch; and Auth: Swing login/register screens (`LoginView`, `RegisterView`,
-> `HomeView`) → `AuthController` (salted PBKDF2 password hashes) → `UserRepository` (`users` +
-> role subtype tables).
+> **Status: partially implemented.** Beneficiary profiles, requests, manual distributions,
+> admin management and impact reports work through Swing, controllers and PostgreSQL repositories.
+> Auth (login/register), `DatabaseManager`, and Event Type CRUD are also implemented.
+> Other modules still contain skeleton methods; in particular, food donation creation belongs
+> to the donation module. Existing food donations can be selected by beneficiary administration.
 
 ## Database (PostgreSQL)
 
@@ -62,8 +59,9 @@ View ──▶ Controller ──▶ Service (EventService, DonationService, Rece
 ```
 Rule: views only talk to controllers; models never import views or controllers.
 
-Models, patterns and the three services follow the Lucidchart class diagram exactly (same fields,
-same method names). Repositories, controllers and views are the MVC layer around it.
+Models, pattern roles and the three original services follow the Lucidchart class diagram.
+The beneficiary implementation adds accessors and a delivery-count report total.
+Repositories, controllers and views provide the MVC layer around the domain classes.
 `DonationDetails` and `ReceiptOptions` are small helper classes for the untyped `details`/`request`
 and `options` parameters in the diagram. `PickupTaskStatus` is an enum for `PickupTask.status`.
 
@@ -112,3 +110,37 @@ own sub-package under `patterns/` when we start Phase 2.
 | Events & notifications (Observer) | `Event`, `EventRegistration`, `Notification`, `patterns/observer`, `EventService`, their repositories, `EventController`, `NotificationController`, event/notification views |
 | Pickups, beneficiaries & reports | `PickupTask`, `Distribution`, `DonationRequest`, `ImpactReport`, their repositories, `PickupController`, `BeneficiaryController`, `ReportController`, `views/volunteer/PickupTasksView`, `views/beneficiary`, `ImpactReportView` |
 | Lookups & database (Singleton) | `models/lookups`, `DatabaseManager`, `Repository<T>`, lookup repositories, `LookupController`, `views/lookups` |
+
+## Beneficiary module
+
+After login, beneficiaries can open **My profile**, **My requests**, and **Received distributions**.
+Admins can open **Manage beneficiaries** (beneficiary list, request approval/rejection, delivery
+recording) and **Impact reports**. Admin accounts must already exist; registration does not create them.
+Load `database/seed.sql` for the food categories and units used by request forms.
+
+The module keeps the existing schema and domain relationships. Requests start as `PENDING` and
+admins can decide each request once as `APPROVED` or `REJECTED`. Approval and delivery are independent:
+recording a distribution does not automatically fulfil a request. Delivery forms select existing food
+donations and optionally a volunteer. Beneficiaries can only read their own requests and deliveries.
+Database operations in these screens run on Swing workers, and logout closes module windows.
+
+Distribution quantity remains the existing donation-level scalar. Item/unit allocation and inventory
+deduction are not implemented; mixed-item donations remain supported by `FoodDonation`. Reports count
+distinct beneficiary accounts as households served and count delivery records per volunteer over an
+inclusive date range. Unassigned deliveries count in delivery totals but have no volunteer row.
+Meals display as **N/A**, because no meal-count/conversion rule has been defined.
+
+### Beneficiary verification
+
+With Python 3.9+, JDK 17+, PostgreSQL tools and the Maven-cached PostgreSQL JDBC jar available, run:
+
+```powershell
+python tests/run-beneficiary-tests.py
+python tests/run-beneficiary-tests.py --gui
+```
+
+The runner creates a fresh PostgreSQL cluster under `target/beneficiary-verification`, loads the
+existing schema and lookup seeds, runs integration assertions, then stops and deletes that cluster.
+It overrides database settings only for its Java child process and never uses the application database.
+`--gui` also exercises real Swing screens and writes GUI captures under that target directory.
+Use `--postgres-bin` or `--jdbc-jar` to supply tools installed elsewhere; `--help` lists the options.
