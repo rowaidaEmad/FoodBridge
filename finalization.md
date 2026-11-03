@@ -33,7 +33,7 @@ The team's work is unchanged, and the volunteer module now sits on top of it.
 | Check | Result |
 |---|---|
 | Files on the team's branch | 119 |
-| Byte-identical to the team's version (before this document's README and STRUCTURE additions) | 103 |
+| Byte-identical to the team's version | 101 |
 | Changed by adding lines only | 6, including README and STRUCTURE (section 4) |
 | Empty stubs filled in; no written logic replaced | 6 (section 4) |
 | Volunteer-owned files that replaced a stub | 6 (section 4) |
