@@ -24,25 +24,25 @@ public class LookupController {
     private UnitRepository unitRepository;
 
     public LookupController() {
+        areaRepository = new AreaRepository();
         eventTypeRepository = new EventTypeRepository();
         // TODO: create the other lookup repositories once they are implemented
     }
 
     public void addArea(Area item) {
-        // TODO: implement
+        areaRepository.add(item);
     }
 
     public List<Area> listAreas() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return areaRepository.findAll();
     }
 
     public void updateArea(Area item) {
-        // TODO: implement
+        areaRepository.update(item);
     }
 
     public void deleteArea(int id) {
-        // TODO: implement
+        areaRepository.delete(id);
     }
 
     public void addDonationStatus(DonationStatus item) {

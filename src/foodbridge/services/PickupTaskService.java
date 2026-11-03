@@ -21,9 +21,13 @@ public class PickupTaskService {
         return pickupTaskRepository.findAvailable();
     }
 
-    public List<PickupTask> viewAvailableTasks(int volunteerId) {
+    /** Pending tasks the volunteer qualifies for; areaId filters by area, null shows every area. */
+    public List<PickupTask> viewAvailableTasks(int volunteerId, Integer areaId) {
         Volunteer volunteer = requireVolunteer(volunteerId);
-        return pickupTaskRepository.findAvailable().stream()
+        List<PickupTask> pending = areaId == null
+                ? pickupTaskRepository.findAvailable()
+                : pickupTaskRepository.findAvailableInArea(areaId);
+        return pending.stream()
                 .filter(task -> isQualified(volunteer, task))
                 .toList();
     }

@@ -26,9 +26,10 @@ public class VolunteerService {
         return volunteerRepository.findAllActive();
     }
 
-    public void updateProfile(int id, String availability, boolean hasTransport, List<String> skills,
+    public void updateProfile(int id, String availability, boolean hasTransport, Integer areaId, List<String> skills,
             List<String> preferences) {
-        volunteerRepository.updateProfile(id, availability, hasTransport, cleanValues(skills), cleanValues(preferences));
+        volunteerRepository.updateProfile(id, availability, hasTransport, areaId, cleanValues(skills),
+                cleanValues(preferences));
     }
 
     public void logHours(int volunteerId, double hours, String note) {

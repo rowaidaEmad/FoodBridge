@@ -2,7 +2,10 @@ package foodbridge.controllers;
 
 import java.util.List;
 
+import foodbridge.models.lookups.Area;
 import foodbridge.models.operations.PickupTask;
+import foodbridge.repositories.AreaRepository;
+import foodbridge.repositories.VolunteerRepository;
 import foodbridge.services.PickupTaskService;
 
 /**
@@ -15,8 +18,17 @@ public class PickupController {
         return pickupTaskService.listPending();
     }
 
-    public List<PickupTask> listAvailable(int volunteerId) {
-        return pickupTaskService.viewAvailableTasks(volunteerId);
+    /** areaId null = all areas. */
+    public List<PickupTask> listAvailable(int volunteerId, Integer areaId) {
+        return pickupTaskService.viewAvailableTasks(volunteerId, areaId);
+    }
+
+    public List<Area> listAreas() {
+        return new AreaRepository().findAll();
+    }
+
+    public Area volunteerArea(int volunteerId) {
+        return new VolunteerRepository().findById(volunteerId).getArea();
     }
 
     public List<PickupTask> listMine(int volunteerId) {

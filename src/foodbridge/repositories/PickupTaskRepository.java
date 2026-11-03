@@ -10,6 +10,7 @@ import java.util.List;
 
 import foodbridge.models.donations.FoodDonation;
 import foodbridge.models.enums.PickupTaskStatus;
+import foodbridge.models.lookups.Area;
 import foodbridge.models.operations.PickupTask;
 import foodbridge.models.operations.VolunteerHours;
 import foodbridge.models.users.Beneficiary;
@@ -25,15 +26,16 @@ public class PickupTaskRepository implements Repository<PickupTask> {
     private static final String SELECT_TASKS =
             "SELECT t.id, t.status, t.required_skill, t.food_donation_id, t.volunteer_id, t.beneficiary_id,"
             + " t.pickup_time, t.delivery_time, t.hours_spent, fd.pickup_window, d.donor_id,"
-            + " b.name AS beneficiary_name,"
+            + " d.area_id, ar.city, ar.district, b.name AS beneficiary_name,"
             + " string_agg(fi.name || ' ' || trim_scale(fi.quantity), ', ' ORDER BY fi.id) AS items"
             + " FROM pickup_tasks t"
             + " JOIN food_donations fd ON fd.donation_id = t.food_donation_id"
             + " JOIN donations d ON d.id = t.food_donation_id"
             + " LEFT JOIN food_items fi ON fi.food_donation_id = t.food_donation_id"
+            + " LEFT JOIN areas ar ON ar.id = d.area_id"
             + " LEFT JOIN users b ON b.id = t.beneficiary_id";
     private static final String GROUP_AND_ORDER =
-            " GROUP BY t.id, fd.pickup_window, d.donor_id, b.name ORDER BY t.id";
+            " GROUP BY t.id, fd.pickup_window, d.donor_id, d.area_id, ar.city, ar.district, b.name ORDER BY t.id";
 
     private final DatabaseManager db;
 
@@ -73,6 +75,28 @@ public class PickupTaskRepository implements Repository<PickupTask> {
 
     public List<PickupTask> findAvailable() {
         return query(" WHERE t.status = 'PENDING'");
+    }
+
+    /** Pending tasks whose donation is in the given area. */
+    public List<PickupTask> findAvailableInArea(int areaId) {
+        return query(" WHERE t.status = 'PENDING' AND d.area_id = ?", areaId);
+    }
+
+    /**
+     * Creates a pending task for a new food donation. The beneficiary is the active beneficiary in the
+     * donation's area (any active beneficiary if none lives there), so the delivery has someone to go to.
+     */
+    public void addForDonation(int foodDonationId, Integer areaId) {
+        String sql = "INSERT INTO pickup_tasks(food_donation_id, beneficiary_id)"
+                + " SELECT ?, (SELECT b.user_id FROM beneficiaries b JOIN users u ON u.id = b.user_id"
+                + " WHERE u.is_active ORDER BY (u.area_id IS NOT DISTINCT FROM ?) DESC, b.user_id LIMIT 1)";
+        try (Connection c = db.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, foodDonationId);
+            JdbcSupport.setNullableInt(ps, 2, areaId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not create pickup task: " + e.getMessage(), e);
+        }
     }
 
     public List<PickupTask> findByVolunteer(int volunteerId) {
@@ -199,6 +223,10 @@ public class PickupTaskRepository implements Repository<PickupTask> {
         task.setHoursSpent(rs.getDouble("hours_spent"));
         task.setItemsSummary(rs.getString("items"));
         task.setDonation(mapDonation(rs));
+        int areaId = rs.getInt("area_id");
+        if (!rs.wasNull()) {
+            task.setArea(new Area(areaId, rs.getString("city"), rs.getString("district")));
+        }
         int volunteerId = rs.getInt("volunteer_id");
         if (!rs.wasNull()) {
             Volunteer volunteer = new Volunteer();

@@ -9,8 +9,13 @@ import foodbridge.models.users.Donor;
  */
 public abstract class DonationFactory {
     public Donation registerDonation(Donor donor, DonationDetails details) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (donor == null) {
+            throw new IllegalArgumentException("A donation needs a donor");
+        }
+        if (details == null) {
+            throw new IllegalArgumentException("Donation details are required");
+        }
+        return createDonation(donor, details);
     }
 
     public abstract Donation createDonation(Donor donor, DonationDetails details);

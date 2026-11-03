@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 import foodbridge.models.donations.FoodDonation;
 import foodbridge.models.enums.PickupTaskStatus;
+import foodbridge.models.lookups.Area;
 import foodbridge.models.users.Beneficiary;
 import foodbridge.models.users.Volunteer;
 
@@ -25,6 +26,7 @@ public class PickupTask {
     private double hoursSpent;
     private String requiredSkill;
     private String itemsSummary;
+    private Area area;
 
     public PickupTask() {
     }
@@ -136,6 +138,14 @@ public class PickupTask {
 
     public void setRequiredSkill(String requiredSkill) {
         this.requiredSkill = requiredSkill;
+    }
+
+    public Area getArea() {
+        return area;
+    }
+
+    public void setArea(Area area) {
+        this.area = area;
     }
 
     public String getItemsSummary() {

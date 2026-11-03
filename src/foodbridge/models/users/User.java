@@ -58,6 +58,10 @@ public abstract class User {
         return area;
     }
 
+    public void setArea(Area area) {
+        this.area = area;
+    }
+
     public boolean isActive() {
         return active;
     }

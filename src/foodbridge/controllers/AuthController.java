@@ -43,12 +43,19 @@ public class AuthController {
         return user;
     }
 
+    public java.util.List<foodbridge.models.lookups.Area> listAreas() {
+        return new foodbridge.repositories.AreaRepository().findAll();
+    }
+
     public void register(User user, String password) {
         if (user.getName() == null || user.getName().isBlank()) {
             throw new IllegalArgumentException("Name is required.");
         }
         if (user.getEmail() == null || !user.getEmail().matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")) {
             throw new IllegalArgumentException("Enter a valid email address.");
+        }
+        if (user instanceof foodbridge.models.users.Volunteer && user.getArea() == null) {
+            throw new IllegalArgumentException("Choose your area.");
         }
         if (password == null || password.length() < 6) {
             throw new IllegalArgumentException("Password must be at least 6 characters.");

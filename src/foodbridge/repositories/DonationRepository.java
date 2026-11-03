@@ -366,9 +366,20 @@ public class DonationRepository implements Repository<Donation> {
 
     private Donor loadDonor(int donorId) {
         User user = new UserRepository().findById(donorId);
-        if (!(user instanceof Donor donor)) {
-            throw new IllegalStateException("User " + donorId + " is not a donor");
+        if (user == null) {
+            throw new IllegalStateException("No user " + donorId);
         }
+        if (user instanceof Donor donor) {
+            return donor;
+        }
+        // Another role (such as a volunteer) donating: present them as a donor.
+        Donor donor = new Donor();
+        donor.setId(user.getId());
+        donor.setName(user.getName());
+        donor.changeEmail(user.getEmail());
+        donor.updateContactInfo(user.getPhone(), user.getAddress());
+        donor.setArea(user.getArea());
+        donor.setDonorType("Individual");
         return donor;
     }
 }

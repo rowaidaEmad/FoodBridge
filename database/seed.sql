@@ -11,3 +11,4 @@ DELETE FROM donation_statuses WHERE name IN ('PENDING','ACCEPTED','COMPLETED','C
 INSERT INTO food_categories(name) VALUES ('Cooked meals'),('Bakery'),('Dairy'),('Canned'),('Produce') ON CONFLICT(name) DO NOTHING;
 INSERT INTO units(name) VALUES ('kg'),('meals'),('boxes'),('liters') ON CONFLICT(name) DO NOTHING;
 INSERT INTO donation_statuses(name) VALUES ('Posted'),('Picked up'),('Delivered'),('Expired'),('Cancelled') ON CONFLICT(name) DO NOTHING;
+INSERT INTO areas(city,district) VALUES ('Cairo','Nasr City'),('Cairo','Maadi'),('Giza','Dokki'),('Alexandria','Smouha') ON CONFLICT(city,district) DO NOTHING;

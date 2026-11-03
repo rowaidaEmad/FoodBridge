@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import foodbridge.models.lookups.Area;
 import foodbridge.models.operations.VolunteerHours;
 import foodbridge.models.users.Volunteer;
 import foodbridge.patterns.singleton.DatabaseManager;
@@ -17,9 +18,9 @@ import foodbridge.patterns.singleton.DatabaseManager;
  */
 public class VolunteerRepository {
     private static final String SELECT_VOLUNTEERS =
-            "SELECT u.id, u.name, u.email, u.phone, u.address, u.is_active,"
+            "SELECT u.id, u.name, u.email, u.phone, u.address, u.area_id, a.city, a.district, u.is_active,"
             + " v.availability, v.has_transport, v.total_hours"
-            + " FROM users u JOIN volunteers v ON v.user_id = u.id";
+            + " FROM users u JOIN volunteers v ON v.user_id = u.id LEFT JOIN areas a ON a.id = u.area_id";
     private static final String SELECT_SKILLS =
             "SELECT skill FROM volunteer_skills WHERE volunteer_id = ? ORDER BY skill";
     private static final String SELECT_PREFERENCES =
@@ -57,9 +58,14 @@ public class VolunteerRepository {
         return volunteers;
     }
 
-    public void updateProfile(int id, String availability, boolean hasTransport, List<String> skills,
+    public void updateProfile(int id, String availability, boolean hasTransport, Integer areaId, List<String> skills,
             List<String> preferences) {
         JdbcSupport.inTransaction(db, "Could not update profile", c -> {
+            try (PreparedStatement ps = c.prepareStatement("UPDATE users SET area_id = ? WHERE id = ?")) {
+                JdbcSupport.setNullableInt(ps, 1, areaId);
+                ps.setInt(2, id);
+                ps.executeUpdate();
+            }
             try (PreparedStatement ps = c.prepareStatement(
                     "UPDATE volunteers SET availability = ?, has_transport = ? WHERE user_id = ?")) {
                 ps.setString(1, availability);
@@ -121,6 +127,10 @@ public class VolunteerRepository {
         volunteer.setName(rs.getString("name"));
         volunteer.changeEmail(rs.getString("email"));
         volunteer.updateContactInfo(rs.getString("phone"), rs.getString("address"));
+        int areaId = rs.getInt("area_id");
+        if (!rs.wasNull()) {
+            volunteer.setArea(new Area(areaId, rs.getString("city"), rs.getString("district")));
+        }
         volunteer.setActive(rs.getBoolean("is_active"));
         volunteer.setAvailability(rs.getString("availability"));
         volunteer.setHasTransport(rs.getBoolean("has_transport"));

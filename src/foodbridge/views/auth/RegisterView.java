@@ -19,6 +19,7 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 
 import foodbridge.controllers.AuthController;
+import foodbridge.models.lookups.Area;
 import foodbridge.models.users.Beneficiary;
 import foodbridge.models.users.Donor;
 import foodbridge.models.users.User;
@@ -49,6 +50,7 @@ public class RegisterView implements View {
             new JComboBox<>(new String[] { "Individual", "Restaurant", "Supermarket/Bakery", "Company" });
     private final JTextField organizationField = new JTextField(20);
     private final JTextField availabilityField = new JTextField(20);
+    private final JComboBox<Area> areaBox = new JComboBox<>();
     private final JCheckBox transportBox = new JCheckBox("I have transport");
     private final JSpinner householdSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 100, 1));
     private final JTextField needsField = new JTextField(20);
@@ -69,8 +71,10 @@ public class RegisterView implements View {
         addRow(donorPanel, "Donor type:", donorTypeBox);
         addRow(donorPanel, "Organization (optional):", organizationField);
 
-        JPanel volunteerPanel = grid(2);
+        authController.listAreas().forEach(areaBox::addItem);
+        JPanel volunteerPanel = grid(3);
         addRow(volunteerPanel, "Availability (e.g. weekends):", availabilityField);
+        addRow(volunteerPanel, "Area:", areaBox);
         addRow(volunteerPanel, "", transportBox);
 
         JPanel beneficiaryPanel = grid(2);
@@ -138,6 +142,7 @@ public class RegisterView implements View {
             Volunteer v = new Volunteer();
             v.setAvailability(blankToNull(availabilityField.getText()));
             v.setHasTransport(transportBox.isSelected());
+            v.setArea((Area) areaBox.getSelectedItem());
             return v;
         }
         if (BENEFICIARY.equals(role)) {

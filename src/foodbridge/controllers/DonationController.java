@@ -1,9 +1,17 @@
 package foodbridge.controllers;
 
+import java.util.List;
+
 import foodbridge.models.donations.DonationDetails;
 import foodbridge.models.donations.DonationProcessingResult;
 import foodbridge.models.donations.Receipt;
+import foodbridge.models.lookups.Area;
+import foodbridge.models.lookups.FoodCategory;
+import foodbridge.models.lookups.Unit;
 import foodbridge.patterns.decorator.ReceiptOptions;
+import foodbridge.repositories.AreaRepository;
+import foodbridge.repositories.FoodCategoryRepository;
+import foodbridge.repositories.UnitRepository;
 import foodbridge.services.DonationService;
 import foodbridge.services.ReceiptService;
 
@@ -15,12 +23,23 @@ public class DonationController {
     private ReceiptService receiptService;
 
     public DonationController() {
-        // TODO: implement
+        donationService = new DonationService();
     }
 
     public int createDonation(String type, DonationDetails request) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return donationService.createDonation(type, request);
+    }
+
+    public List<Area> listAreas() {
+        return new AreaRepository().findAll();
+    }
+
+    public List<FoodCategory> listCategories() {
+        return new FoodCategoryRepository().findAll();
+    }
+
+    public List<Unit> listUnits() {
+        return new UnitRepository().findAll();
     }
 
     public DonationProcessingResult payMoneyDonation(int donationId) {

@@ -5,6 +5,7 @@ import java.awt.GridLayout;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -12,6 +13,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import foodbridge.controllers.VolunteerController;
+import foodbridge.models.lookups.Area;
 import foodbridge.models.users.Volunteer;
 import foodbridge.views.SwingSupport;
 import foodbridge.views.View;
@@ -24,6 +26,7 @@ public class VolunteerProfileView implements View {
     private final VolunteerController volunteerController;
     private final JFrame frame = new JFrame("FoodBridge - My Profile");
     private final JTextField availabilityField = new JTextField(28);
+    private final JComboBox<Area> areaBox = new JComboBox<>();
     private final JCheckBox transportBox = new JCheckBox("I have transport");
     private final JTextField skillsField = new JTextField(28);
     private final JTextField preferencesField = new JTextField(28);
@@ -35,10 +38,12 @@ public class VolunteerProfileView implements View {
         JButton saveButton = new JButton("Save");
         saveButton.addActionListener(e -> save());
 
-        JPanel panel = new JPanel(new GridLayout(5, 2, 8, 8));
+        JPanel panel = new JPanel(new GridLayout(6, 2, 8, 8));
         panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
         panel.add(new JLabel("Availability (e.g. weekends):"));
         panel.add(availabilityField);
+        panel.add(new JLabel("Area:"));
+        panel.add(areaBox);
         panel.add(new JLabel("Transport:"));
         panel.add(transportBox);
         panel.add(new JLabel("Skills (comma-separated):"));
@@ -64,6 +69,15 @@ public class VolunteerProfileView implements View {
 
     private void load() {
         Volunteer volunteer = volunteerController.getVolunteer(volunteerId);
+        areaBox.removeAllItems();
+        volunteerController.listAreas().forEach(areaBox::addItem);
+        if (volunteer.getArea() != null) {
+            for (int i = 0; i < areaBox.getItemCount(); i++) {
+                if (areaBox.getItemAt(i).getId() == volunteer.getArea().getId()) {
+                    areaBox.setSelectedIndex(i);
+                }
+            }
+        }
         availabilityField.setText(SwingSupport.orEmpty(volunteer.getAvailability()));
         transportBox.setSelected(volunteer.hasTransport());
         skillsField.setText(String.join(", ", volunteer.getSkills()));
@@ -73,6 +87,7 @@ public class VolunteerProfileView implements View {
     private void save() {
         SwingSupport.attempt(frame, () -> {
             volunteerController.updateProfile(volunteerId, availabilityField.getText().trim(), transportBox.isSelected(),
+                    areaBox.getSelectedItem() == null ? null : ((Area) areaBox.getSelectedItem()).getId(),
                     SwingSupport.splitValues(skillsField.getText()), SwingSupport.splitValues(preferencesField.getText()));
             load();
             JOptionPane.showMessageDialog(frame, "Profile saved.");

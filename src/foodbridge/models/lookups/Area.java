@@ -17,6 +17,15 @@ public class Area {
         this.district = district;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    @Override
+    public String toString() {
+        return city + " - " + district;
+    }
+
     public int getId() {
         return id;
     }

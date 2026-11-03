@@ -38,4 +38,9 @@ public class FoodCategory {
         }
         this.name = name.trim();
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

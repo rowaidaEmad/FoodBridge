@@ -12,15 +12,18 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import foodbridge.controllers.AuthController;
+import foodbridge.controllers.DonationController;
 import foodbridge.controllers.EventController;
 import foodbridge.controllers.NotificationController;
 import foodbridge.controllers.PickupController;
 import foodbridge.controllers.VolunteerController;
 import foodbridge.models.users.Admin;
+import foodbridge.models.users.Donor;
 import foodbridge.models.users.User;
 import foodbridge.models.users.Volunteer;
 import foodbridge.views.admin.VolunteerAssignmentView;
 import foodbridge.views.auth.LoginView;
+import foodbridge.views.donor.AddDonationView;
 import foodbridge.views.volunteer.VolunteerPanelView;
 
 /**
@@ -45,6 +48,9 @@ public class HomeView implements View {
         if (user instanceof Volunteer) {
             actions.add(roleButton("Volunteer Panel", () -> new VolunteerPanelView(user.getId(), new VolunteerController(),
                     new PickupController(), new EventController(), new NotificationController())));
+        }
+        if (user instanceof Volunteer || user instanceof Donor) {
+            actions.add(roleButton("Donate Food", () -> new AddDonationView(user, new DonationController())));
         }
         if (user instanceof Admin) {
             actions.add(roleButton("Assign Volunteers", () -> new VolunteerAssignmentView(new VolunteerController(),

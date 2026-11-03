@@ -2,8 +2,10 @@ package foodbridge.controllers;
 
 import java.util.List;
 
+import foodbridge.models.lookups.Area;
 import foodbridge.models.operations.VolunteerHours;
 import foodbridge.models.users.Volunteer;
+import foodbridge.repositories.AreaRepository;
 import foodbridge.services.CertificateService;
 import foodbridge.services.VolunteerMatchingService;
 import foodbridge.services.VolunteerService;
@@ -24,9 +26,13 @@ public class VolunteerController {
         return volunteerService.listVolunteers();
     }
 
-    public void updateProfile(int id, String availability, boolean hasTransport, List<String> skills,
+    public void updateProfile(int id, String availability, boolean hasTransport, Integer areaId, List<String> skills,
             List<String> preferences) {
-        volunteerService.updateProfile(id, availability, hasTransport, skills, preferences);
+        volunteerService.updateProfile(id, availability, hasTransport, areaId, skills, preferences);
+    }
+
+    public List<Area> listAreas() {
+        return new AreaRepository().findAll();
     }
 
     public void logHours(int volunteerId, double hours, String note) {

@@ -10,6 +10,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
+import foodbridge.models.lookups.Area;
 import foodbridge.models.users.Admin;
 import foodbridge.models.users.Beneficiary;
 import foodbridge.models.users.Donor;
@@ -25,11 +26,12 @@ public class UserRepository implements Repository<User> {
     private DatabaseManager db;
 
     private static final String SELECT_USERS =
-            "SELECT u.id, u.name, u.email, u.password_hash, u.phone, u.address, u.role, u.is_active, u.created_at,"
+            "SELECT u.id, u.name, u.email, u.password_hash, u.phone, u.address, u.area_id, a.city, a.district, u.role, u.is_active, u.created_at,"
             + " d.donor_type, d.organization_name,"
             + " v.availability, v.has_transport, v.total_hours,"
             + " b.household_size, b.needs"
             + " FROM users u"
+            + " LEFT JOIN areas a ON a.id = u.area_id"
             + " LEFT JOIN donors d ON d.user_id = u.id"
             + " LEFT JOIN volunteers v ON v.user_id = u.id"
             + " LEFT JOIN beneficiaries b ON b.user_id = u.id";
@@ -40,8 +42,8 @@ public class UserRepository implements Repository<User> {
 
     @Override
     public void add(User item) {
-        String sql = "INSERT INTO users(name, email, password_hash, phone, address, role, is_active)"
-                + " VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users(name, email, password_hash, phone, address, area_id, role, is_active)"
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection c = db.getConnection()) {
             c.setAutoCommit(false);
             try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -50,8 +52,9 @@ public class UserRepository implements Repository<User> {
                 ps.setString(3, item.getPasswordHash());
                 ps.setString(4, item.getPhone());
                 ps.setString(5, item.getAddress());
-                ps.setString(6, roleOf(item));
-                ps.setBoolean(7, item.isActive());
+                JdbcSupport.setNullableInt(ps, 6, item.getArea() == null ? null : item.getArea().getId());
+                ps.setString(7, roleOf(item));
+                ps.setBoolean(8, item.isActive());
                 ps.executeUpdate();
                 try (ResultSet rs = ps.getGeneratedKeys()) {
                     rs.next();
@@ -94,8 +97,8 @@ public class UserRepository implements Repository<User> {
 
     @Override
     public void update(User item) {
-        String sql = "UPDATE users SET name = ?, email = ?, password_hash = ?, phone = ?, address = ?, is_active = ?"
-                + " WHERE id = ?";
+        String sql = "UPDATE users SET name = ?, email = ?, password_hash = ?, phone = ?, address = ?, area_id = ?,"
+                + " is_active = ? WHERE id = ?";
         try (Connection c = db.getConnection()) {
             c.setAutoCommit(false);
             try (PreparedStatement ps = c.prepareStatement(sql)) {
@@ -104,8 +107,9 @@ public class UserRepository implements Repository<User> {
                 ps.setString(3, item.getPasswordHash());
                 ps.setString(4, item.getPhone());
                 ps.setString(5, item.getAddress());
-                ps.setBoolean(6, item.isActive());
-                ps.setInt(7, item.getId());
+                JdbcSupport.setNullableInt(ps, 6, item.getArea() == null ? null : item.getArea().getId());
+                ps.setBoolean(7, item.isActive());
+                ps.setInt(8, item.getId());
                 if (ps.executeUpdate() == 0) {
                     throw new IllegalArgumentException("No user with id " + item.getId());
                 }
@@ -136,6 +140,18 @@ public class UserRepository implements Repository<User> {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Could not delete user: " + e.getMessage(), e);
+        }
+    }
+
+    /** Lets any user (for example a volunteer) donate: adds a donor profile if they have none. */
+    public void ensureDonorProfile(int userId) {
+        try (Connection c = db.getConnection();
+                PreparedStatement ps = c.prepareStatement(
+                        "INSERT INTO donors(user_id, donor_type) VALUES (?, 'Individual') ON CONFLICT (user_id) DO NOTHING")) {
+            ps.setInt(1, userId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not create donor profile: " + e.getMessage(), e);
         }
     }
 
@@ -182,6 +198,10 @@ public class UserRepository implements Repository<User> {
         user.changeEmail(rs.getString("email"));
         user.setPasswordHash(rs.getString("password_hash"));
         user.updateContactInfo(rs.getString("phone"), rs.getString("address"));
+        int areaId = rs.getInt("area_id");
+        if (!rs.wasNull()) {
+            user.setArea(new Area(areaId, rs.getString("city"), rs.getString("district")));
+        }
         user.setActive(rs.getBoolean("is_active"));
         Timestamp created = rs.getTimestamp("created_at");
         user.setCreatedAt(created == null ? null : created.toLocalDateTime());
