@@ -98,5 +98,8 @@ public class ReceiptModuleTest {
         donations.save(food);
         rejects(() -> controller.createReceipt(food.getId()), "Cancelled donation rejected");
         System.out.println("PASS: " + assertions + " receipt service/database assertions.");
+        if (args.length > 0 && args[0].equals("--gui")) {
+            ReceiptGuiSmokeTest.run(controller, donor, money.getId());
+        }
     }
 }

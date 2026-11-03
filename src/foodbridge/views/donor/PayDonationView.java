@@ -50,16 +50,19 @@ public class PayDonationView implements View {
         JButton pay = new JButton("Pay");
         JButton cancel = new JButton("Cancel donation");
         JButton viewItems = new JButton("View items");
+        JButton receipt = new JButton("Receipt");
         JButton refresh = new JButton("Refresh");
         pay.addActionListener(e -> onPay());
         cancel.addActionListener(e -> onCancel());
         viewItems.addActionListener(e -> onViewItems());
+        receipt.addActionListener(e -> onReceipt());
         refresh.addActionListener(e -> reload());
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.add(pay);
         buttons.add(cancel);
         buttons.add(viewItems);
+        buttons.add(receipt);
         buttons.add(refresh);
 
         JPanel content = new JPanel(new BorderLayout(8, 8));
@@ -159,6 +162,13 @@ public class PayDonationView implements View {
                     JOptionPane.INFORMATION_MESSAGE);
         } catch (RuntimeException ex) {
             showError(ex.getMessage());
+        }
+    }
+
+    private void onReceipt() {
+        Integer id = selectedId();
+        if (id != null) {
+            new ReceiptView(donationController, id).show();
         }
     }
 
