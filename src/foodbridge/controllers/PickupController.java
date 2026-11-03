@@ -2,36 +2,56 @@ package foodbridge.controllers;
 
 import java.util.List;
 
+import foodbridge.models.lookups.Area;
 import foodbridge.models.operations.PickupTask;
-import foodbridge.models.users.Volunteer;
-import foodbridge.repositories.DistributionRepository;
-import foodbridge.repositories.PickupTaskRepository;
+import foodbridge.repositories.AreaRepository;
+import foodbridge.repositories.VolunteerRepository;
+import foodbridge.services.PickupTaskService;
 
 /**
- * Volunteer pickup tasks and distributions.
+ * Volunteer pickup tasks.
  */
 public class PickupController {
-    private PickupTaskRepository pickupTaskRepository;
-    private DistributionRepository distributionRepository;
-
-    public PickupController() {
-        // TODO: implement
-    }
+    private final PickupTaskService pickupTaskService = new PickupTaskService();
 
     public List<PickupTask> listTasks() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return pickupTaskService.listPending();
     }
 
-    public void assignVolunteer(int taskId, Volunteer volunteer) {
-        // TODO: implement
+    /** areaId null = all areas. */
+    public List<PickupTask> listAvailable(int volunteerId, Integer areaId) {
+        return pickupTaskService.viewAvailableTasks(volunteerId, areaId);
     }
 
-    public void markPickedUp(int taskId) {
-        // TODO: implement
+    public List<Area> listAreas() {
+        return new AreaRepository().findAll();
     }
 
-    public void markDelivered(int taskId) {
-        // TODO: implement
+    public Area volunteerArea(int volunteerId) {
+        return new VolunteerRepository().findById(volunteerId).getArea();
+    }
+
+    public List<PickupTask> listMine(int volunteerId) {
+        return pickupTaskService.viewMyTasks(volunteerId);
+    }
+
+    public boolean acceptTask(int taskId, int volunteerId) {
+        return pickupTaskService.acceptTask(taskId, volunteerId);
+    }
+
+    public void declineTask(int taskId, int volunteerId) {
+        pickupTaskService.declineTask(taskId, volunteerId);
+    }
+
+    public void assignVolunteer(int taskId, int volunteerId) {
+        pickupTaskService.assignTask(taskId, volunteerId);
+    }
+
+    public void markPickedUp(int taskId, int volunteerId) {
+        pickupTaskService.markPickedUp(taskId, volunteerId);
+    }
+
+    public void markDelivered(int taskId, int volunteerId) {
+        pickupTaskService.markDelivered(taskId, volunteerId);
     }
 }

@@ -2,6 +2,7 @@ package foodbridge.views;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.awt.Window;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -20,7 +21,10 @@ import foodbridge.controllers.DonationController;
 import foodbridge.controllers.EventController;
 import foodbridge.controllers.LookupController;
 import foodbridge.controllers.NotificationController;
+import foodbridge.controllers.PickupController;
 import foodbridge.controllers.ReportController;
+import foodbridge.controllers.UserController;
+import foodbridge.controllers.VolunteerController;
 import foodbridge.models.users.Admin;
 import foodbridge.models.users.Beneficiary;
 import foodbridge.models.users.Donor;
@@ -30,18 +34,23 @@ import foodbridge.views.admin.AdminPermissionsView;
 import foodbridge.views.admin.ImpactReportView;
 import foodbridge.views.admin.ManageBeneficiariesView;
 import foodbridge.views.admin.ManageEventsView;
+import foodbridge.views.admin.ManageUsersView;
+import foodbridge.views.admin.VolunteerAssignmentView;
 import foodbridge.views.auth.LoginView;
 import foodbridge.views.auth.NotificationsView;
+import foodbridge.views.auth.ProfileView;
 import foodbridge.views.beneficiary.BeneficiaryProfileView;
 import foodbridge.views.beneficiary.DonationRequestView;
 import foodbridge.views.beneficiary.ReceivedDistributionsView;
 import foodbridge.views.donor.AddDonationView;
 import foodbridge.views.donor.PayDonationView;
+import foodbridge.views.lookups.AreaView;
 import foodbridge.views.lookups.DonationStatusView;
 import foodbridge.views.lookups.EventTypeView;
 import foodbridge.views.lookups.FoodCategoryView;
 import foodbridge.views.lookups.UnitView;
 import foodbridge.views.volunteer.EventRegistrationView;
+import foodbridge.views.volunteer.VolunteerPanelView;
 
 /**
  * Post-login navigation by role. Module windows are closed when the session ends.
@@ -79,12 +88,20 @@ public class HomeView implements View {
             navigation.add(moduleButton("Manage events", () -> new ManageEventsView(new EventController())));
             navigation.add(dialogButton("Event types", () -> new EventTypeView(lookups).show()));
             navigation.add(moduleButton("My permissions", () -> new AdminPermissionsView(new AdminController(), admin)));
+            navigation.add(dialogButton("Assign volunteers", () -> new VolunteerAssignmentView(new VolunteerController(),
+                    new PickupController(), new EventController()).show()));
+            navigation.add(moduleButton("Manage users", () -> new ManageUsersView(new UserController(), user.getId())));
+            navigation.add(moduleButton("Areas", () -> new AreaView(lookups)));
         } else if (user instanceof Volunteer volunteer) {
+            navigation.add(dialogButton("Volunteer panel", () -> new VolunteerPanelView(user.getId(),
+                    new VolunteerController(), new PickupController(), new EventController(),
+                    new NotificationController()).show()));
             navigation.add(moduleButton("Events", () -> new EventRegistrationView(new EventController(), volunteer)));
         } else {
             navigation.add(new JLabel("Screens for this role are coming soon."));
         }
         navigation.add(moduleButton("Notifications", () -> new NotificationsView(new NotificationController(), user)));
+        navigation.add(moduleButton("Contact details", () -> new ProfileView(new UserController(), user)));
         panel.add(navigation, BorderLayout.CENTER);
 
         JButton logout = new JButton("Logout");
@@ -93,6 +110,10 @@ public class HomeView implements View {
             pages.values().forEach(ModuleView::close);
             pages.clear();
             frame.dispose();
+            // The volunteer panel opens its own windows, which are not in pages.
+            for (Window window : Window.getWindows()) {
+                window.dispose();
+            }
             loginView.show();
         });
         panel.add(logout, BorderLayout.SOUTH);

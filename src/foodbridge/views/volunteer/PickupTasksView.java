@@ -1,20 +1,139 @@
 package foodbridge.views.volunteer;
 
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.util.List;
+import java.util.function.IntConsumer;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+
 import foodbridge.controllers.PickupController;
+import foodbridge.models.lookups.Area;
+import foodbridge.models.operations.PickupTask;
+import foodbridge.views.SwingSupport;
 import foodbridge.views.View;
 
 /**
  * Screen; talks only to PickupController.
  */
 public class PickupTasksView implements View {
-    private PickupController pickupController;
+    private static final String ALL_AREAS = "All areas";
 
-    public PickupTasksView(PickupController pickupController) {
-        // TODO: implement
+    private final int volunteerId;
+    private final PickupController pickupController;
+    private final JFrame frame = new JFrame("FoodBridge - Pickup Tasks");
+    private final JTable availableTable =
+            SwingSupport.readOnlyTable("ID", "Items", "Area", "Pickup window", "Required skill", "Beneficiary");
+    private final JComboBox<Object> areaFilter = new JComboBox<>();
+    private final JTable myTasksTable =
+            SwingSupport.readOnlyTable("ID", "Items", "Status", "Hours", "Beneficiary");
+
+    public PickupTasksView(int volunteerId, PickupController pickupController) {
+        this.volunteerId = volunteerId;
+        this.pickupController = pickupController;
+
+        JPanel content = new JPanel(new GridLayout(2, 1, 8, 8));
+        content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        areaFilter.addItem(ALL_AREAS);
+        pickupController.listAreas().forEach(areaFilter::addItem);
+        Area home = pickupController.volunteerArea(volunteerId);
+        if (home != null) {
+            for (int i = 0; i < areaFilter.getItemCount(); i++) {
+                if (areaFilter.getItemAt(i) instanceof Area a && a.getId() == home.getId()) {
+                    areaFilter.setSelectedIndex(i);
+                }
+            }
+        }
+        areaFilter.addActionListener(e -> SwingSupport.attempt(frame, this::refresh));
+        content.add(section("Available tasks", availableTable, availableActions()));
+        content.add(section("My tasks", myTasksTable, myTaskActions()));
+
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.add(content);
+        frame.pack();
+        frame.setLocationRelativeTo(null);
     }
 
     @Override
     public void show() {
-        // TODO: implement
+        SwingSupport.attempt(frame, () -> {
+            refresh();
+            frame.setVisible(true);
+        });
+    }
+
+    private JPanel section(String title, JTable table, JPanel actions) {
+        JPanel panel = new JPanel(new BorderLayout(4, 4));
+        panel.setBorder(BorderFactory.createTitledBorder(title));
+        panel.add(SwingSupport.scroll(table, 680, 150), BorderLayout.CENTER);
+        panel.add(actions, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel availableActions() {
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actions.add(new JLabel("Area:"));
+        actions.add(areaFilter);
+        actions.add(actionButton("Accept", availableTable, this::accept));
+        return actions;
+    }
+
+    private JPanel myTaskActions() {
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        actions.add(actionButton("Decline", myTasksTable, id -> pickupController.declineTask(id, volunteerId)));
+        actions.add(actionButton("Picked Up", myTasksTable, id -> pickupController.markPickedUp(id, volunteerId)));
+        actions.add(actionButton("Delivered", myTasksTable, id -> pickupController.markDelivered(id, volunteerId)));
+        return actions;
+    }
+
+    private JButton actionButton(String label, JTable table, IntConsumer action) {
+        JButton button = new JButton(label);
+        button.addActionListener(e -> SwingSupport.attempt(frame, () -> {
+            action.accept(SwingSupport.selectedId(table));
+            refresh();
+        }));
+        return button;
+    }
+
+    private void accept(int taskId) {
+        if (!pickupController.acceptTask(taskId, volunteerId)) {
+            JOptionPane.showMessageDialog(frame, "This task was already taken.");
+        }
+    }
+
+    private void refresh() {
+        SwingSupport.setRows(availableTable, availableRows());
+        SwingSupport.setRows(myTasksTable, myTaskRows());
+    }
+
+    private List<Object[]> availableRows() {
+        return pickupController.listAvailable(volunteerId, selectedAreaId()).stream()
+                .map(task -> new Object[] { task.getId(), task.getItemsSummary(),
+                        task.getArea() == null ? "" : task.getArea().toString(), task.getDonation().getPickupWindow(),
+                        SwingSupport.orEmpty(task.getRequiredSkill()), beneficiaryName(task) })
+                .toList();
+    }
+
+    private List<Object[]> myTaskRows() {
+        return pickupController.listMine(volunteerId).stream()
+                .map(task -> new Object[] { task.getId(), task.getItemsSummary(), task.getStatus(),
+                        String.format("%.2f", task.getHoursSpent()), beneficiaryName(task) })
+                .toList();
+    }
+
+    private Integer selectedAreaId() {
+        return areaFilter.getSelectedItem() instanceof Area area ? area.getId() : null;
+    }
+
+    private String beneficiaryName(PickupTask task) {
+        return task.getBeneficiary() == null ? "" : task.getBeneficiary().getName();
     }
 }

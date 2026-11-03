@@ -137,3 +137,23 @@ Package name of each file = its folder, e.g. `src/foodbridge/models/users/Donor.
 
 Rule: views call controllers, controllers call services/repositories, repositories use
 `DatabaseManager.getInstance()`. Models never import views or controllers.
+
+## Volunteer module files
+
+Added to the tree above:
+
+```
+src/foodbridge/
+├── models/operations/      VolunteerHours, Certificate (abstract), ParticipationCertificate, AchievementCertificate
+├── patterns/strategy/      VolunteerMatchingStrategy, SkillMatchStrategy, AvailabilityMatchStrategy, PreferenceMatchStrategy, MatchCriteria
+├── patterns/factory/       CertificateFactory (abstract), ParticipationCertificateFactory, AchievementCertificateFactory
+├── patterns/decorator/     CertificateComponent, BasicCertificate, CertificateDecorator (abstract), HoursBreakdownDecorator, SignatureDecorator
+├── services/               VolunteerMatchingService, CertificateService, VolunteerService, PickupTaskService
+├── repositories/           VolunteerRepository, CertificateRepository, JdbcSupport
+├── controllers/            VolunteerController
+└── views/                  SwingSupport, admin/VolunteerAssignmentView,
+                            volunteer/VolunteerPanelView, volunteer/VolunteerProfileView, volunteer/HoursCertificateView
+database/seed_volunteer.sql demo data and areas
+docs/volunteer-crud-matrix.md
+tests/VolunteerModuleTest.java, tests/run-volunteer-tests.py
+```

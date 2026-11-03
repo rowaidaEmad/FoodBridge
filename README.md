@@ -9,6 +9,9 @@ and an admin manages users, lookup tables, events and impact reports.
 > Auth (login/register), `DatabaseManager`, and Event Type CRUD are also implemented.
 > Other modules still contain skeleton methods; in particular, food donation creation belongs
 > to the donation module. Existing food donations can be selected by beneficiary administration.
+>
+> **Volunteer module: implemented.** Profiles, pickup tasks, ranking, event attendance, hours and
+> certificates. See [Volunteer module](#volunteer-module) and `finalization.md`.
 
 ## Database (PostgreSQL)
 
@@ -110,6 +113,7 @@ own sub-package under `patterns/` when we start Phase 2.
 | Events & notifications (Observer) | `Event`, `EventRegistration`, `Notification`, `patterns/observer`, `EventService`, their repositories, `EventController`, `NotificationController`, event/notification views |
 | Pickups, beneficiaries & reports | `PickupTask`, `Distribution`, `DonationRequest`, `ImpactReport`, their repositories, `PickupController`, `BeneficiaryController`, `ReportController`, `views/volunteer/PickupTasksView`, `views/beneficiary`, `ImpactReportView` |
 | Lookups & database (Singleton) | `models/lookups`, `DatabaseManager`, `Repository<T>`, lookup repositories, `LookupController`, `views/lookups` |
+| Volunteers (Strategy #2, Factory #2, Decorator #2) | `Volunteer`, `PickupTask`, `VolunteerHours`, the certificate classes, their patterns, `VolunteerMatchingService`, `CertificateService`, `VolunteerService`, `PickupTaskService`, `VolunteerRepository`, `PickupTaskRepository`, `CertificateRepository`, `VolunteerController`, `PickupController`, `views/volunteer` (except `EventRegistrationView`), `VolunteerAssignmentView` |
 
 ## Receipts (Decorator)
 
@@ -170,3 +174,34 @@ existing schema and lookup seeds, runs integration assertions, then stops and de
 It overrides database settings only for its Java child process and never uses the application database.
 `--gui` also exercises real Swing screens and writes GUI captures under that target directory.
 Use `--postgres-bin` or `--jdbc-jar` to supply tools installed elsewhere; `--help` lists the options.
+
+## Volunteer module
+
+The final class diagram is `docs/class-diagram/FoodBridge Class Diagram.svg`. The module adds a second Strategy
+(ranking volunteers), a second Factory Method and a second Decorator (certificates), and uses the Events and
+Notifications module as it is. `finalization.md` records how it was merged.
+
+To try it, run this once after `schema.sql` and `seed.sql`. It adds areas, demo pickup tasks and events:
+
+```
+psql -U postgres -d nonprofit_db -f database/seed_volunteer.sql
+```
+
+Volunteers open **Volunteer panel** from Home: profile, pickup tasks, events, hours and certificates, and
+notifications. Admins open **Assign volunteers** to rank and assign volunteers and to mark attendance.
+
+Admin accounts are not created from the screen. To make one, register a Donor with the email below, then run this
+in `psql`:
+
+```sql
+DELETE FROM donors WHERE user_id = (SELECT id FROM users WHERE email = 'admin@demo.local');
+UPDATE users SET role = 'ADMIN' WHERE email = 'admin@demo.local';
+INSERT INTO admins(user_id) SELECT id FROM users WHERE email = 'admin@demo.local';
+```
+
+Run the isolated tests (same prerequisites as beneficiary verification):
+
+```powershell
+py tests/run-volunteer-tests.py
+py tests/run-volunteer-tests.py --gui
+```

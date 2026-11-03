@@ -135,6 +135,21 @@ public class UserRepository implements Repository<User> {
         }
     }
 
+    /** Updates only the users row, for the contact and active fields; the subtype row is not touched. */
+    public void updateAccount(User item) {
+        try (Connection c = db.getConnection(); PreparedStatement ps = c.prepareStatement(
+                "UPDATE users SET email = ?, phone = ?, address = ?, is_active = ? WHERE id = ?")) {
+            ps.setString(1, item.getEmail());
+            ps.setString(2, item.getPhone());
+            ps.setString(3, item.getAddress());
+            ps.setBoolean(4, item.isActive());
+            ps.setInt(5, item.getId());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not update user: " + e.getMessage(), e);
+        }
+    }
+
     /** Updates beneficiary fields without deleting a subtype row referenced by deliveries. */
     public void updateBeneficiaryProfile(int id, int householdSize, String needs) {
         if (householdSize <= 0) throw new IllegalArgumentException("Household size must be at least 1.");
