@@ -9,21 +9,31 @@ public class Area {
     private String district;
 
     public Area() {
-        // TODO: implement
+    }
+
+    public Area(int id, String city, String district) {
+        this.id = id;
+        this.city = city;
+        this.district = district;
     }
 
     public int getId() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return id;
     }
 
     public String getCity() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
     }
 
     public String getDistrict() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
     }
 }
