@@ -14,11 +14,13 @@ and an admin manages users, lookup tables, events and impact reports.
 ## Database (PostgreSQL)
 
 1. Install PostgreSQL and make sure the service is running.
-2. Create the database and tables (from this folder):
+2. Create the database and tables (from this folder). The last command is optional; it adds
+   starter lookup data. If `psql` is not recognized, add `C:\Program Files\PostgreSQL\<version>\bin`
+   to your PATH and reopen the terminal.
    ```
    psql -U postgres -c "CREATE DATABASE nonprofit_db"
    psql -U postgres -d nonprofit_db -f database/schema.sql
-   psql -U postgres -d nonprofit_db -f database/seed.sql     # optional starter lookup data
+   psql -U postgres -d nonprofit_db -f database/seed.sql
    ```
 3. Set the connection environment variables (`DB_PASSWORD` is required, the others have defaults):
 
