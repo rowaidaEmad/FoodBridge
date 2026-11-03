@@ -4,15 +4,17 @@ package foodbridge.patterns.decorator;
  * DECORATOR - Decorator. Wraps a ReceiptComponent.
  */
 public abstract class ReceiptDecorator implements ReceiptComponent {
-    protected ReceiptComponent wrapped;
+    protected final ReceiptComponent wrapped;
 
     public ReceiptDecorator(ReceiptComponent wrapped) {
-        // TODO: implement
+        if (wrapped == null) {
+            throw new IllegalArgumentException("A wrapped receipt is required");
+        }
+        this.wrapped = wrapped;
     }
 
     @Override
     public String generate() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return wrapped.generate();
     }
 }

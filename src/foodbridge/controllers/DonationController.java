@@ -39,7 +39,7 @@ public class DonationController {
         donationStatusRepository = new DonationStatusRepository();
         foodCategoryRepository = new FoodCategoryRepository();
         unitRepository = new UnitRepository();
-        // TODO (Decorator step): create the ReceiptService.
+        receiptService = new ReceiptService();
     }
 
     public int createDonation(String type, DonationDetails request) {
@@ -104,12 +104,10 @@ public class DonationController {
     }
 
     public Receipt createReceipt(int donationId) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return receiptService.createReceipt(donationId);
     }
 
     public String getReceiptText(int receiptId, ReceiptOptions options) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return receiptService.generateReceiptText(receiptId, options);
     }
 }
