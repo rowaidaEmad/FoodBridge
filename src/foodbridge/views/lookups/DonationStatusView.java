@@ -1,8 +1,20 @@
 package foodbridge.views.lookups;
 
-public class DonationStatusView {
+import foodbridge.controllers.LookupController;
+import foodbridge.views.View;
 
+/**
+ * Screen; talks only to LookupController.
+ */
+public class DonationStatusView implements View {
+    private LookupController lookupController;
+
+    public DonationStatusView(LookupController lookupController) {
+        // TODO: implement
+    }
+
+    @Override
     public void show() {
-        // TODO
+        // TODO: implement
     }
 }

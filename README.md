@@ -1,139 +1,80 @@
 # FoodBridge
 
-FoodBridge is a food donation management system for a food bank charity. It connects **donors**
-(people and businesses with surplus food) to **beneficiaries** (families and charities in need),
-with **volunteers** picking up and delivering the food. The goal is to reduce food waste and get
-food to the people who need it, fairly and on time.
+Food donation management system for a non-profit (CSE336 Major Task, SP 2026).
+Donors give food or money, volunteers pick it up and deliver it, beneficiaries receive it,
+and an admin manages users, lookup tables, events and impact reports.
 
-> Status: project skeleton. Every class has its fields and empty method stubs (`// TODO`).
-> The code compiles, but the logic still needs to be written.
+> **Status: skeleton only.** Every class has its fields and method signatures.
+> Method bodies are `// TODO: implement` (non-void methods throw `UnsupportedOperationException`)
+> so the project compiles while each team member implements their own module.
 
-## Users
+## Run (VS Code)
 
-| Role        | What they do                                              |
-|-------------|-----------------------------------------------------------|
-| Donor       | Gives food or money (individual, restaurant, supermarket, company) |
-| Volunteer   | Gives time and transport; picks up and delivers food      |
-| Beneficiary | Receives food (family or charity)                         |
-| Admin       | Runs the system: users, lookup tables, reports, events    |
+1. Install JDK 17+ and the **Extension Pack for Java**.
+2. File → Open Folder → this folder (the one that contains `src`).
+3. Open `src/foodbridge/Main.java` → **Run** (or F5 → "Run FoodBridge").
 
-A volunteer who also wants to donate food uses the donor features from the same account.
-
-## Life of a food donation
-
-1. A donor posts 20 meals. Status: **Posted** (no receipt yet).
-2. Volunteers in that area are notified.
-3. A volunteer accepts and picks up the food. Status: **Picked up**. The donor gets a receipt.
-4. The volunteer delivers to a family. Status: **Delivered**. A `Distribution` record is created
-   and the volunteer's hours are logged.
-5. The donor gets a "your meals reached a family" update.
-
-A money donation gets its receipt right after payment succeeds.
-
-## Requirements
-
-- **JDK 17 or newer** (JDK 21 LTS recommended, e.g. Temurin from adoptium.net)
-- **VS Code** with the **Extension Pack for Java** (Microsoft), or any Java IDE
-
-Check your JDK:
-
+Command line:
 ```
-java -version
-javac -version
-```
-
-## How to run
-
-### VS Code
-
-1. File → Open Folder → choose `foodbridge-java` (the folder that contains `src`).
-2. Wait for the Java extension to finish loading (bottom status bar).
-3. Open `src/foodbridge/Main.java` and click **Run**, or press **F5** and pick "Run FoodBridge".
-
-The `.vscode` folder already sets `src` as the source folder and `foodbridge.Main` as the main class.
-
-### Command line
-
-From the `foodbridge-java` folder:
-
-```
-# Windows (PowerShell)
-javac -d bin (Get-ChildItem -Recurse src -Filter *.java).FullName
-java -cp bin foodbridge.Main
-
-# macOS / Linux
-javac -d bin $(find src -name "*.java")
+javac -d bin $(find src -name "*.java")      # PowerShell: javac -d bin (Get-ChildItem -Recurse src -Filter *.java).FullName
 java -cp bin foodbridge.Main
 ```
 
-You should see `FoodBridge started`.
-
-## Project structure (MVC)
+## MVC layers
 
 ```
-src/foodbridge/
-├── Main.java
-├── models/
-│   ├── users/        User (abstract), Donor, Volunteer, Beneficiary, Admin
-│   ├── donations/    Donation (abstract), FoodDonation, MoneyDonation, FoodItem, Receipt
-│   ├── operations/   DonationRequest, PickupTask, Distribution, ImpactReport, Event
-│   ├── lookups/      FoodCategory, Unit, Area, DonationStatus
-│   └── enums/        Role, DonorType, BeneficiaryType, PaymentMethod
-├── controllers/      AuthController, UserController, DonationController, PickupController,
-│                     BeneficiaryController, ReportController, EventController, LookupController
-└── views/
-    ├── auth/         LoginView, RegisterView
-    ├── donor/        MyDonationsView, AddDonationView, TrackStatusView, MyReceiptsView
-    ├── volunteer/    AvailablePickupsView, MyTasksView, MyHoursView
-    ├── beneficiary/  RequestFoodView, ReceivedDonationsView
-    ├── admin/        ImpactReportView, EventsView
-    └── lookups/      FoodCategoryView, UnitView, AreaView, DonationStatusView
+View ──▶ Controller ──▶ Service (EventService, DonationService, ReceiptService) ──▶ Repository ──▶ DatabaseManager (Singleton) ──▶ Database
+                    └─▶ Repository (for modules with no service in the diagram)
 ```
+Rule: views only talk to controllers; models never import views or controllers.
 
-See [STRUCTURE.md](STRUCTURE.md) for the full file tree.
+Models, patterns and the three services follow the Lucidchart class diagram exactly (same fields,
+same method names). Repositories, controllers and views are the MVC layer around it.
+`DonationDetails` and `ReceiptOptions` are small helper classes for the untyped `details`/`request`
+and `options` parameters in the diagram. `PickupTaskStatus` is an enum for `PickupTask.status`.
 
-**How the layers talk:** views call controllers, controllers use models, and models never import
-views or controllers.
+## Packages
 
-- **Models** hold the data and the rules about it (15 classes + 4 lookup tables).
-- **Controllers** handle a user action and update the models (8 classes).
-- **Views** show screens and pass input to controllers (6 groups).
-- **Lookups** are admin-editable tables (categories, units, areas, statuses).
-- **Enums** are fixed values that never change at runtime (optional; can be replaced by Strings).
+| Package | Contents |
+|---|---|
+| `models.users` | `User` (abstract), `Volunteer`, `Donor`, `Beneficiary`, `Admin` |
+| `models.donations` | `Donation` (abstract), `MoneyDonation`, `FoodDonation`, `FoodItem`, `Receipt`, `DonationProcessingResult`, `DonationDetails` |
+| `models.operations` | `Event`, `EventRegistration`, `Notification`, `PickupTask`, `Distribution`, `DonationRequest`, `ImpactReport` |
+| `models.lookups` | CRUD lookup tables: `Area`, `DonationStatus`, `EventType`, `FoodCategory`, `Unit` |
+| `models.enums` | `PickupTaskStatus` |
+| `patterns.singleton` | `DatabaseManager` |
+| `patterns.factory` | `DonationFactory` (Creator), `MoneyDonationFactory`, `FoodDonationFactory` |
+| `patterns.strategy` | `DonationProcessingStrategy`, `CashStrategy`, `CheckStrategy`, `OnlineStrategy` |
+| `patterns.observer` | `Subject`, `EventObserver`, `EventPublisher`, `NotificationLogger`, `VolunteerObserver` |
+| `patterns.decorator` | `ReceiptComponent`, `BasicReceipt`, `ReceiptDecorator`, `ThankYouDecorator`, `TaxInfoDecorator`, `ReceiptOptions` |
+| `services` | `EventService` (Observer client), `ReceiptService` (Decorator client), `DonationService` (Strategy context + Factory client) |
+| `repositories` | `Repository<T>` + one repository per model and lookup table |
+| `controllers` | `Auth`, `User`, `Donation`, `Pickup`, `Beneficiary`, `Event`, `Notification`, `Report`, `Lookup` |
+| `views.*` | `View` interface + screens in `auth`, `donor`, `volunteer`, `beneficiary`, `admin`, `lookups` |
 
-## Key relationships
+## Phase 1 grading items → where they live
 
-- `Donor`, `Volunteer`, `Beneficiary` and `Admin` extend `User`.
-- `FoodDonation` and `MoneyDonation` extend `Donation`.
-- A `Donor` has many `Donation`s; a `FoodDonation` is composed of many `FoodItem`s.
-- Each `Donation` has one `Receipt`, issued at pickup (food) or after payment (money).
-- A `PickupTask` links one `FoodDonation`, one `Volunteer` and one `Beneficiary`.
-- Marking a `PickupTask` delivered creates one `Distribution` and logs the volunteer's hours.
-- `ImpactReport` is calculated from `Distribution` records; it stores no new data.
-- `Donation`, `FoodItem` and `DonationRequest` reference the lookup tables.
+| Item | Location |
+|---|---|
+| Class diagram | Lucidchart (this code mirrors it) |
+| Strategy | `patterns/strategy` + `services/DonationService` |
+| Observer | `patterns/observer` + `services/EventService` |
+| Decorator | `patterns/decorator` + `services/ReceiptService` |
+| Factory | `patterns/factory` + `services/DonationService` |
+| Singleton | `patterns/singleton/DatabaseManager` |
+| MVC | `models` / `views` / `controllers` |
+| CRUD lookup tables | `models/lookups` + their repositories + `controllers/LookupController` + `views/lookups` |
 
-## Functional requirements
+Phase 2 patterns (Command, Adapter, Facade, Template Method, Iterator, State, Proxy) get their
+own sub-package under `patterns/` when we start Phase 2.
 
-1. Users can register, log in and edit their profile.
-2. Donors can be individuals, restaurants, supermarkets/bakeries or companies.
-3. Donors can post surplus food with quantity, category and expiry date.
-4. Donors can set a pickup time window for each donation.
-5. Donors can label food items with allergens.
-6. Donors can make money donations online, by cash at pickup or by bank transfer.
-7. Donors can track donation status: posted, picked up, delivered.
-8. Donors receive a receipt when their food is picked up, or right after a money payment.
-9. Donors are notified when their food reaches a family.
-10. Volunteers can register with their availability, area and transport.
-11. Volunteers can view available pickups filtered by area.
-12. Volunteers can accept or decline a pickup task.
-13. Volunteers can mark a task as picked up and then delivered.
-14. The system logs volunteer hours and generates certificates.
-15. A volunteer can also donate food using the donor features.
-16. Beneficiaries can submit food requests with quantity and category.
-17. Beneficiaries can view the donations they received.
-18. The system creates a distribution record whenever a task is marked delivered.
-19. Staff can view impact reports: meals per family, families served per month, deliveries per volunteer.
-20. Staff can mark donations that expired before pickup.
-21. Staff can create food drive events and manage registration and attendance.
-22. Users receive email, SMS or in-app notifications when a donation or task they are part of changes.
-23. Admins can manage food categories, units, areas and donation statuses.
+## Suggested module split
+
+| Module | Files |
+|---|---|
+| Users & auth | `models/users`, `UserRepository`, `AuthController`, `UserController`, `views/auth` (Login, Register, Profile), `ManageUsersView` |
+| Donations (Factory + Strategy) | `models/donations` (minus Receipt), `patterns/factory`, `patterns/strategy`, `DonationService`, `DonationRepository`, `DonationController`, `AddDonationView`, `PayDonationView` |
+| Receipts (Decorator) | `Receipt`, `patterns/decorator`, `ReceiptService`, `ReceiptRepository`, `ReceiptView` |
+| Events & notifications (Observer) | `Event`, `EventRegistration`, `Notification`, `patterns/observer`, `EventService`, their repositories, `EventController`, `NotificationController`, event/notification views |
+| Pickups, beneficiaries & reports | `PickupTask`, `Distribution`, `DonationRequest`, `ImpactReport`, their repositories, `PickupController`, `BeneficiaryController`, `ReportController`, `views/volunteer/PickupTasksView`, `views/beneficiary`, `ImpactReportView` |
+| Lookups & database (Singleton) | `models/lookups`, `DatabaseManager`, `Repository<T>`, lookup repositories, `LookupController`, `views/lookups` |

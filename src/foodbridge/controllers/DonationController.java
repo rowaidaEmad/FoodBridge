@@ -1,31 +1,40 @@
 package foodbridge.controllers;
 
-import foodbridge.models.donations.Donation;
+import foodbridge.models.donations.DonationDetails;
+import foodbridge.models.donations.DonationProcessingResult;
 import foodbridge.models.donations.Receipt;
-import foodbridge.models.users.Donor;
-import java.util.List;
+import foodbridge.patterns.decorator.ReceiptOptions;
+import foodbridge.services.DonationService;
+import foodbridge.services.ReceiptService;
 
+/**
+ * Donations, payments and receipts.
+ */
 public class DonationController {
+    private DonationService donationService;
+    private ReceiptService receiptService;
 
-    public void createDonation(Donation d) {
-        // TODO
+    public DonationController() {
+        // TODO: implement
     }
 
-    public List<Donation> viewDonations(Donor donor) {
-        // TODO
-        return null;
+    public int createDonation(String type, DonationDetails request) {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public void updateDonation(Donation d) {
-        // TODO
+    public DonationProcessingResult payMoneyDonation(int donationId) {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public void deleteDonation(int id) {
-        // TODO
+    public Receipt createReceipt(int donationId) {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public Receipt issueReceipt(Donation d) {
-        // TODO
-        return null;
+    public String getReceiptText(int receiptId, ReceiptOptions options) {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

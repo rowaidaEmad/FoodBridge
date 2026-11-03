@@ -1,20 +1,27 @@
 package foodbridge.models.donations;
 
 import java.time.LocalDate;
-import foodbridge.models.users.Donor;
 
+/**
+ * Core domain. Receipt of one Donation; formatted by BasicReceipt (Decorator).
+ */
 public class Receipt {
     private int id;
+    private String receiptNumber;
     private Donation donation;
-    private Donor donor;
     private LocalDate issueDate;
-    private String description;
 
-    public void generate() {
-        // TODO
+    public Receipt() {
+        // TODO: implement
     }
 
-    public void download() {
-        // TODO
+    public String getReceiptNumber() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public Donation getDonation() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

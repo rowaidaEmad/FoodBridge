@@ -1,6 +1,29 @@
 package foodbridge.models.lookups;
 
+/**
+ * Lookup table (CRUD).
+ */
 public class Area {
-    protected int id;
-    protected String name;
+    private int id;
+    private String city;
+    private String district;
+
+    public Area() {
+        // TODO: implement
+    }
+
+    public int getId() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public String getCity() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public String getDistrict() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }

@@ -1,23 +1,34 @@
 package foodbridge.models.operations;
 
-import java.util.ArrayList;
-import java.time.LocalDate;
-import java.util.List;
-import foodbridge.models.users.Volunteer;
+import java.time.LocalDateTime;
 
+import foodbridge.models.lookups.EventType;
+
+/**
+ * Core domain. Of one EventType; has 0..* EventRegistration.
+ */
 public class Event {
     private int id;
     private String title;
-    private LocalDate date;
+    private String description;
+    private LocalDateTime date;
     private String location;
-    private List<Volunteer> volunteers = new ArrayList<>();
-    private List<Volunteer> attendees = new ArrayList<>();
+    private EventType type;
 
-    public void register(Volunteer v) {
-        // TODO
+    public Event() {
+        // TODO: implement
     }
 
-    public void markAttendance(Volunteer v) {
-        // TODO
+    public String getTitle() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public void reschedule(LocalDateTime date) {
+        // TODO: implement
+    }
+
+    public void setLocation(String location) {
+        // TODO: implement
     }
 }

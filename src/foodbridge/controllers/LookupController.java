@@ -1,29 +1,114 @@
 package foodbridge.controllers;
 
+import java.util.List;
+
 import foodbridge.models.lookups.Area;
 import foodbridge.models.lookups.DonationStatus;
+import foodbridge.models.lookups.EventType;
 import foodbridge.models.lookups.FoodCategory;
 import foodbridge.models.lookups.Unit;
+import foodbridge.repositories.AreaRepository;
+import foodbridge.repositories.DonationStatusRepository;
+import foodbridge.repositories.EventTypeRepository;
+import foodbridge.repositories.FoodCategoryRepository;
+import foodbridge.repositories.UnitRepository;
 
+/**
+ * Admin CRUD on the 5 lookup tables.
+ */
 public class LookupController {
+    private AreaRepository areaRepository;
+    private DonationStatusRepository donationStatusRepository;
+    private EventTypeRepository eventTypeRepository;
+    private FoodCategoryRepository foodCategoryRepository;
+    private UnitRepository unitRepository;
 
-    public void addCategory(FoodCategory c) {
-        // TODO
+    public LookupController() {
+        // TODO: implement
     }
 
-    public void addUnit(Unit u) {
-        // TODO
+    public void addArea(Area item) {
+        // TODO: implement
     }
 
-    public void addArea(Area a) {
-        // TODO
+    public List<Area> listAreas() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public void addStatus(DonationStatus s) {
-        // TODO
+    public void updateArea(Area item) {
+        // TODO: implement
     }
 
-    public void deleteLookup(String table, int id) {
-        // TODO
+    public void deleteArea(int id) {
+        // TODO: implement
+    }
+
+    public void addDonationStatus(DonationStatus item) {
+        // TODO: implement
+    }
+
+    public List<DonationStatus> listDonationStatuss() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public void updateDonationStatus(DonationStatus item) {
+        // TODO: implement
+    }
+
+    public void deleteDonationStatus(int id) {
+        // TODO: implement
+    }
+
+    public void addEventType(EventType item) {
+        // TODO: implement
+    }
+
+    public List<EventType> listEventTypes() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public void updateEventType(EventType item) {
+        // TODO: implement
+    }
+
+    public void deleteEventType(int id) {
+        // TODO: implement
+    }
+
+    public void addFoodCategory(FoodCategory item) {
+        // TODO: implement
+    }
+
+    public List<FoodCategory> listFoodCategorys() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public void updateFoodCategory(FoodCategory item) {
+        // TODO: implement
+    }
+
+    public void deleteFoodCategory(int id) {
+        // TODO: implement
+    }
+
+    public void addUnit(Unit item) {
+        // TODO: implement
+    }
+
+    public List<Unit> listUnits() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    public void updateUnit(Unit item) {
+        // TODO: implement
+    }
+
+    public void deleteUnit(int id) {
+        // TODO: implement
     }
 }

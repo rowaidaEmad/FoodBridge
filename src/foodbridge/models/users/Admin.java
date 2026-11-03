@@ -1,21 +1,27 @@
 package foodbridge.models.users;
 
-import java.util.List;
-import foodbridge.models.operations.ImpactReport;
+import java.util.Set;
 
+/**
+ * Core domain. Manages the system.
+ */
 public class Admin extends User {
-    private List<String> permissions;
+    private Set<String> permissions;
 
-    public void manageUsers() {
-        // TODO
+    public Admin() {
+        // TODO: implement
     }
 
-    public void manageLookups() {
-        // TODO
+    public boolean hasPermission(String p) {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public ImpactReport viewImpactReport() {
-        // TODO
-        return null;
+    public void addPermission(String p) {
+        // TODO: implement
+    }
+
+    public void removePermission(String p) {
+        // TODO: implement
     }
 }

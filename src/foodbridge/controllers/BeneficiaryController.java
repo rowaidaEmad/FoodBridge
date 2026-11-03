@@ -1,18 +1,33 @@
 package foodbridge.controllers;
 
-import foodbridge.models.operations.Distribution;
-import foodbridge.models.operations.DonationRequest;
-import foodbridge.models.users.Beneficiary;
 import java.util.List;
 
-public class BeneficiaryController {
+import foodbridge.models.operations.Distribution;
+import foodbridge.models.operations.DonationRequest;
+import foodbridge.repositories.DistributionRepository;
+import foodbridge.repositories.DonationRequestRepository;
 
-    public void submitRequest(DonationRequest r) {
-        // TODO
+/**
+ * Donation requests and received distributions.
+ */
+public class BeneficiaryController {
+    private DonationRequestRepository requestRepository;
+    private DistributionRepository distributionRepository;
+
+    public BeneficiaryController() {
+        // TODO: implement
     }
 
-    public List<Distribution> viewDistributions(Beneficiary b) {
-        // TODO
-        return null;
+    public void submitRequest(DonationRequest request) {
+        // TODO: implement
+    }
+
+    public void updateRequestStatus(int requestId, String status) {
+        // TODO: implement
+    }
+
+    public List<Distribution> listDistributions(int beneficiaryId) {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

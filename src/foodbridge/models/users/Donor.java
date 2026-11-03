@@ -1,26 +1,27 @@
 package foodbridge.models.users;
 
-import java.util.ArrayList;
-import java.util.List;
-import foodbridge.models.donations.Donation;
-import foodbridge.models.donations.Receipt;
-import foodbridge.models.enums.DonorType;
-
+/**
+ * Core domain. Makes donations.
+ */
 public class Donor extends User {
-    private DonorType donorType;
-    private List<Donation> donations = new ArrayList<>();
+    private String donorType;
+    private String organizationName;
 
-    public void addDonation(Donation d) {
-        // TODO
+    public Donor() {
+        // TODO: implement
     }
 
-    public List<Donation> viewDonations() {
-        // TODO
-        return null;
+    public String getDonorType() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public List<Receipt> viewReceipts() {
-        // TODO
-        return null;
+    public void setDonorType(String type) {
+        // TODO: implement
+    }
+
+    public String getOrganizationName() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

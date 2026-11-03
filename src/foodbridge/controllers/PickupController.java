@@ -1,27 +1,37 @@
 package foodbridge.controllers;
 
-import foodbridge.models.donations.FoodDonation;
-import foodbridge.models.lookups.Area;
-import foodbridge.models.operations.PickupTask;
-import foodbridge.models.users.Volunteer;
 import java.util.List;
 
+import foodbridge.models.operations.PickupTask;
+import foodbridge.models.users.Volunteer;
+import foodbridge.repositories.DistributionRepository;
+import foodbridge.repositories.PickupTaskRepository;
+
+/**
+ * Volunteer pickup tasks and distributions.
+ */
 public class PickupController {
+    private PickupTaskRepository pickupTaskRepository;
+    private DistributionRepository distributionRepository;
 
-    public List<FoodDonation> availablePickups(Area area) {
-        // TODO
-        return null;
+    public PickupController() {
+        // TODO: implement
     }
 
-    public void assignTask(PickupTask task, Volunteer v) {
-        // TODO
+    public List<PickupTask> listTasks() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public void markPickedUp(PickupTask task) {
-        // TODO
+    public void assignVolunteer(int taskId, Volunteer volunteer) {
+        // TODO: implement
     }
 
-    public void markDelivered(PickupTask task) {
-        // TODO
+    public void markPickedUp(int taskId) {
+        // TODO: implement
+    }
+
+    public void markDelivered(int taskId) {
+        // TODO: implement
     }
 }

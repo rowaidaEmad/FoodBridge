@@ -1,23 +1,31 @@
 package foodbridge.models.users;
 
-import foodbridge.models.lookups.Area;
-import foodbridge.models.operations.PickupTask;
-
+/**
+ * Core domain. Performs pickup tasks, delivers distributions, registers for events.
+ */
 public class Volunteer extends User {
     private String availability;
-    private Area area;
     private boolean hasTransport;
     private double totalHours;
 
-    public void acceptTask(PickupTask task) {
-        // TODO
+    public Volunteer() {
+        // TODO: implement
     }
 
-    public void declineTask(PickupTask task) {
-        // TODO
+    public void setAvailability(String value) {
+        // TODO: implement
     }
 
-    public void logHours(double hours) {
-        // TODO
+    public void setHasTransport(boolean flag) {
+        // TODO: implement
+    }
+
+    public void addHours(double hours) {
+        // TODO: implement
+    }
+
+    public double getTotalHours() {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

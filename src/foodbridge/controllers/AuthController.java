@@ -1,19 +1,28 @@
 package foodbridge.controllers;
 
 import foodbridge.models.users.User;
+import foodbridge.repositories.UserRepository;
 
+/**
+ * Login / register / logout.
+ */
 public class AuthController {
+    private UserRepository userRepository;
+
+    public AuthController() {
+        // TODO: implement
+    }
 
     public User login(String email, String password) {
-        // TODO
-        return null;
+        // TODO: implement
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     public void register(User user) {
-        // TODO
+        // TODO: implement
     }
 
-    public void logout(User user) {
-        // TODO
+    public void logout() {
+        // TODO: implement
     }
 }
