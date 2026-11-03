@@ -6,6 +6,13 @@
             "name": "Run FoodBridge",
             "request": "launch",
             "mainClass": "foodbridge.Main"
+        },
+        {
+            "type": "java",
+            "name": "Run FoodBridge (local .env)",
+            "request": "launch",
+            "mainClass": "foodbridge.Main",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
