@@ -3,17 +3,14 @@ package foodbridge.controllers;
 import java.util.List;
 
 import foodbridge.models.operations.Event;
+import foodbridge.models.operations.EventRegistration;
 import foodbridge.services.EventService;
 
 /**
  * Events and volunteer registration (uses EventService).
  */
 public class EventController {
-    private EventService eventService;
-
-    public EventController() {
-        // TODO: implement
-    }
+    private final EventService eventService = new EventService();
 
     public long createEvent(Event event) {
         // TODO: implement
@@ -25,7 +22,23 @@ public class EventController {
     }
 
     public void registerVolunteer(int eventId, int volunteerId) {
-        // TODO: implement
+        eventService.registerVolunteer(eventId, volunteerId);
+    }
+
+    public List<EventRegistration> listRegistrations(int volunteerId) {
+        return eventService.listRegistrations(volunteerId);
+    }
+
+    public List<EventRegistration> listRegistrationsForEvent(int eventId) {
+        return eventService.listRegistrationsForEvent(eventId);
+    }
+
+    public void markAttendance(int registrationId, String status, double hours) {
+        eventService.markAttendance(registrationId, status, hours);
+    }
+
+    public void announceChange(int eventId, String message) {
+        eventService.announceChange(eventService.findById(eventId), message);
     }
 
     public boolean cancelEvent(long eventId) {
@@ -34,7 +47,6 @@ public class EventController {
     }
 
     public List<Event> listEvents() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return eventService.list();
     }
 }

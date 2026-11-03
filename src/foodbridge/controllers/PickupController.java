@@ -3,35 +3,43 @@ package foodbridge.controllers;
 import java.util.List;
 
 import foodbridge.models.operations.PickupTask;
-import foodbridge.models.users.Volunteer;
-import foodbridge.repositories.DistributionRepository;
-import foodbridge.repositories.PickupTaskRepository;
+import foodbridge.services.PickupTaskService;
 
 /**
- * Volunteer pickup tasks and distributions.
+ * Volunteer pickup tasks.
  */
 public class PickupController {
-    private PickupTaskRepository pickupTaskRepository;
-    private DistributionRepository distributionRepository;
-
-    public PickupController() {
-        // TODO: implement
-    }
+    private final PickupTaskService pickupTaskService = new PickupTaskService();
 
     public List<PickupTask> listTasks() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return pickupTaskService.listPending();
     }
 
-    public void assignVolunteer(int taskId, Volunteer volunteer) {
-        // TODO: implement
+    public List<PickupTask> listAvailable(int volunteerId) {
+        return pickupTaskService.viewAvailableTasks(volunteerId);
     }
 
-    public void markPickedUp(int taskId) {
-        // TODO: implement
+    public List<PickupTask> listMine(int volunteerId) {
+        return pickupTaskService.viewMyTasks(volunteerId);
     }
 
-    public void markDelivered(int taskId) {
-        // TODO: implement
+    public boolean acceptTask(int taskId, int volunteerId) {
+        return pickupTaskService.acceptTask(taskId, volunteerId);
+    }
+
+    public void declineTask(int taskId, int volunteerId) {
+        pickupTaskService.declineTask(taskId, volunteerId);
+    }
+
+    public void assignVolunteer(int taskId, int volunteerId) {
+        pickupTaskService.assignTask(taskId, volunteerId);
+    }
+
+    public void markPickedUp(int taskId, int volunteerId) {
+        pickupTaskService.markPickedUp(taskId, volunteerId);
+    }
+
+    public void markDelivered(int taskId, int volunteerId) {
+        pickupTaskService.markDelivered(taskId, volunteerId);
     }
 }
