@@ -116,6 +116,7 @@ public class VolunteerModuleTest {
         certificates(walker);
         accounts(donor, beneficiary, driver);
         demoData();
+        seededAdmin();
         System.out.println("PASS: " + assertions + " volunteer module assertions.");
         if (args.length > 0 && "--gui".equals(args[0])) {
             int before = assertions;
@@ -350,6 +351,19 @@ public class VolunteerModuleTest {
                 ResultSet rs = ps.executeQuery()) {
             check(rs.next() && "Logistics".equals(rs.getString(1)), "The demo event has a required skill");
         }
+    }
+
+    /** seed.sql creates this account, and running it again changes nothing. */
+    private static void seededAdmin() throws Exception {
+        AuthController auth = new AuthController();
+        check(auth.login("admin@foodbridge.test", "secret123") instanceof Admin, "The seeded admin can log in as an admin");
+        rejects(() -> new AuthController().login("admin@foodbridge.test", "wrong-password"), "A wrong password is rejected");
+        String script = Files.readString(Path.of("database/seed.sql"));
+        try (Connection c = DatabaseManager.getInstance().getConnection(); Statement st = c.createStatement()) {
+            st.execute(script);
+        }
+        check(new AuthController().login("admin@foodbridge.test", "secret123") instanceof Admin, "Seeding twice keeps the admin");
+        check(userController.listUsers().stream().filter(u -> "admin@foodbridge.test".equals(u.getEmail())).count() == 1, "Seeding twice adds no second account");
     }
 
     // --- Screens ----------------------------------------------------------------------------------------

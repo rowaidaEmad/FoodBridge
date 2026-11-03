@@ -33,8 +33,8 @@ The team's work is unchanged, and the volunteer module now sits on top of it.
 | Check | Result |
 |---|---|
 | Files on the team's branch | 119 |
-| Byte-identical to the team's version | 101 |
-| Changed by adding lines only | 6, including README and STRUCTURE (section 4) |
+| Byte-identical to the team's version | 100 |
+| Changed by adding lines only | 7, including README and STRUCTURE (section 4) |
 | Empty stubs filled in; no written logic replaced | 6 (section 4) |
 | Volunteer-owned files that replaced a stub | 6 (section 4) |
 | Team files removed, or changed in any other way | **0** |
@@ -89,6 +89,7 @@ The `Merged` branch was not changed, so anything left out here can still be reco
 | File | Added | Why |
 |---|---|---|
 | `database/schema.sql` | 7 lines | Volunteer tables, and the `required_skill` columns. Safe to run again. |
+| `database/seed.sql` | 3 lines | Default admin account, `admin@foodbridge.test`. Added on request after the merge. |
 | `src/foodbridge/models/lookups/Area.java` | `setId`, `toString` | `AreaRepository` sets the new id, and area dropdowns show the name |
 | `src/foodbridge/repositories/UserRepository.java` | `updateAccount` | Lets `UserController` save contact details without using `update` (see [section 9](#9-points-for-the-team-to-discuss)) |
 | `src/foodbridge/views/HomeView.java` | 21 lines | Menu entries: Volunteer panel, Assign volunteers, Manage users, Areas, Contact details; logout also closes the volunteer panel's windows |
@@ -126,8 +127,8 @@ These had been changed on `Merged`, and are now byte-identical to the team's bra
 
 `AuthController`, `DonationController`, `EventController`, `DonationDetails`, `EventType`, `Distribution`, `Event`,
 `EventRegistration`, `User`, `DonationRepository`, `EventRegistrationRepository`, `EventRepository`, `DonationService`,
-`EventService`, `ManageEventsView`, `NotificationsView`, `RegisterView`, `AddDonationView`, `EventRegistrationView`,
-`database/seed.sql`.
+`EventService`, `ManageEventsView`, `NotificationsView`, `RegisterView`, `AddDonationView`, `EventRegistrationView`.
+`database/seed.sql` was also restored, then gained the default admin account above.
 
 ---
 
@@ -241,7 +242,7 @@ Every suite ran on its own throwaway PostgreSQL database, with real Swing window
 |---|---|---|
 | Beneficiary | The team | **42** database checks and **12** GUI checks passed |
 | Receipt | The team | **32** database checks, **6** GUI checks and the decorator checks passed |
-| Volunteer module | New | **75** database checks and **11** GUI checks passed |
+| Volunteer module | New | **79** database checks and **11** GUI checks passed |
 
 The volunteer suite covers:
 
@@ -298,6 +299,9 @@ psql -U postgres -d nonprofit_db -f database/seed_volunteer.sql
 ```
 
 Without it there are no areas until an admin adds them on the Areas screen.
+
+`seed.sql` also creates the default admin account, `admin@foodbridge.test` with password `secret123`. Its password is
+in this repository, so it is for development and demos only.
 
 ---
 

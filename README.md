@@ -181,6 +181,9 @@ The final class diagram is `docs/class-diagram/FoodBridge Class Diagram.svg`. Th
 (ranking volunteers), a second Factory Method and a second Decorator (certificates), and uses the Events and
 Notifications module as it is. `finalization.md` records how it was merged.
 
+`seed.sql` creates a default admin account: `admin@foodbridge.test`, password `secret123`. It is for development
+and demos, so change or remove it before any real use.
+
 To try it, run this once after `schema.sql` and `seed.sql`. It adds areas, demo pickup tasks and events:
 
 ```
