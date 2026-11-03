@@ -135,6 +135,18 @@ public class UserRepository implements Repository<User> {
         }
     }
 
+    /** Updates beneficiary fields without deleting a subtype row referenced by deliveries. */
+    public void updateBeneficiaryProfile(int id, int householdSize, String needs) {
+        if (householdSize <= 0) throw new IllegalArgumentException("Household size must be at least 1.");
+        try (Connection c = db.getConnection(); PreparedStatement p = c.prepareStatement(
+                "UPDATE beneficiaries SET household_size=?, needs=? WHERE user_id=?")) {
+            p.setInt(1, householdSize); p.setString(2, needs); p.setInt(3, id);
+            if (p.executeUpdate() != 1) throw new IllegalArgumentException("Beneficiary no longer exists.");
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not save beneficiary profile. Check the database connection.", e);
+        }
+    }
+
     private User findOne(String sql, Object key) {
         try (Connection c = db.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setObject(1, key);
