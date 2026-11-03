@@ -9,6 +9,7 @@ public class DonationStatus {
     public static final String DELIVERED = "Delivered";
     public static final String EXPIRED = "Expired";
     public static final String CANCELLED = "Cancelled";
+    public static final String PAID = "Paid";
 
     private int id;
     private String name;
