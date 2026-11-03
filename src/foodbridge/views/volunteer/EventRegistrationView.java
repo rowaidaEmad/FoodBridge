@@ -1,97 +1,86 @@
 package foodbridge.views.volunteer;
 
 import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
 
 import foodbridge.controllers.EventController;
-import foodbridge.views.SwingSupport;
-import foodbridge.views.View;
+import foodbridge.models.operations.Event;
+import foodbridge.models.operations.EventRegistration;
+import foodbridge.views.ModuleView;
 
 /**
- * Screen; talks only to EventController.
+ * Screen; talks only to EventController. A volunteer registers for upcoming events and is then
+ * notified (Observer) whenever the event changes or is cancelled.
  */
-public class EventRegistrationView implements View {
-    private final int volunteerId;
+public class EventRegistrationView extends ModuleView {
+    private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     private final EventController eventController;
-    private final JFrame frame = new JFrame("FoodBridge - Events");
-    private final JTable eventsTable =
-            SwingSupport.readOnlyTable("ID", "Title", "Type", "Date", "Location", "Required skill");
-    private final JTable registrationsTable =
-            SwingSupport.readOnlyTable("Event", "Date", "Location", "Attendance", "Registered");
+    private final int volunteerId;
+    private final DefaultTableModel events = tableModel("ID", "Title", "Type", "Date", "Location", "Required skill");
+    private final JTable eventTable = table(events);
+    private final DefaultTableModel mine = tableModel("Event", "Date", "Status", "Attendance");
+
+    private record Data(List<Event> events, List<EventRegistration> mine) { }
 
     public EventRegistrationView(int volunteerId, EventController eventController) {
-        this.volunteerId = volunteerId;
+        super("FoodBridge - Events", 900, 560);
         this.eventController = eventController;
+        this.volunteerId = volunteerId;
 
-        JButton registerButton = new JButton("Register");
-        registerButton.addActionListener(e -> register());
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.add(registerButton);
+        JScrollPane upcoming = new JScrollPane(eventTable);
+        upcoming.setBorder(BorderFactory.createTitledBorder("Upcoming events"));
+        JScrollPane registered = new JScrollPane(table(mine));
+        registered.setBorder(BorderFactory.createTitledBorder("My registrations"));
+        JSplitPane lists = new JSplitPane(JSplitPane.VERTICAL_SPLIT, upcoming, registered);
+        lists.setResizeWeight(0.55);
 
-        JPanel content = new JPanel(new GridLayout(2, 1, 8, 8));
-        content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        content.add(section("Events", eventsTable, actions));
-        content.add(section("My registrations", registrationsTable, null));
-
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.add(content);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
+        JPanel actions = new JPanel();
+        actions.add(button("Register for selected event", this::register));
+        actions.add(button("Refresh", this::refresh));
+        content.add(lists, BorderLayout.CENTER);
+        content.add(actions, BorderLayout.SOUTH);
     }
 
     @Override
-    public void show() {
-        SwingSupport.attempt(frame, () -> {
-            refresh();
-            frame.setVisible(true);
-        });
-    }
-
-    private JPanel section(String title, JTable table, JComponent actions) {
-        JPanel panel = new JPanel(new BorderLayout(4, 4));
-        panel.setBorder(BorderFactory.createTitledBorder(title));
-        panel.add(SwingSupport.scroll(table, 680, 150), BorderLayout.CENTER);
-        if (actions != null) {
-            panel.add(actions, BorderLayout.SOUTH);
-        }
-        return panel;
+    protected void refresh() {
+        task(() -> new Data(eventController.listEvents(), eventController.listVolunteerRegistrations(volunteerId)),
+                data -> {
+                    events.setRowCount(0);
+                    for (Event e : data.events()) {
+                        if (!e.isCancelled()) {
+                            events.addRow(new Object[] { e.getId(), e.getTitle(), e.getType().getName(),
+                                    e.getDate().format(WHEN), e.getLocation(), e.getRequiredSkill() });
+                        }
+                    }
+                    mine.setRowCount(0);
+                    for (EventRegistration r : data.mine()) {
+                        mine.addRow(new Object[] { r.getEvent().getTitle(), r.getEvent().getDate().format(WHEN),
+                                r.getEvent().getStatus(), r.getAttendanceStatus() });
+                    }
+                });
     }
 
     private void register() {
-        SwingSupport.attempt(frame, () -> {
-            eventController.registerVolunteer(SwingSupport.selectedId(eventsTable), volunteerId);
+        int row = eventTable.getSelectedRow();
+        if (row < 0) {
+            throw new IllegalArgumentException("Select an event first.");
+        }
+        int eventId = ((Number) eventTable.getValueAt(row, 0)).intValue();
+        task(() -> {
+            eventController.registerVolunteer(eventId, volunteerId);
+            return true;
+        }, ok -> {
+            message("Registered. You will be notified if this event changes.");
             refresh();
         });
-    }
-
-    private void refresh() {
-        SwingSupport.setRows(eventsTable, eventRows());
-        SwingSupport.setRows(registrationsTable, registrationRows());
-    }
-
-    private List<Object[]> eventRows() {
-        return eventController.listEvents().stream()
-                .map(event -> new Object[] { event.getId(), event.getTitle(), event.getType().getName(),
-                        SwingSupport.formatDateTime(event.getDate()), event.getLocation(),
-                        SwingSupport.orEmpty(event.getRequiredSkill()) })
-                .toList();
-    }
-
-    private List<Object[]> registrationRows() {
-        return eventController.listRegistrations(volunteerId).stream()
-                .map(registration -> new Object[] { registration.getEvent().getTitle(),
-                        SwingSupport.formatDateTime(registration.getEvent().getDate()),
-                        registration.getEvent().getLocation(), registration.getAttendanceStatus(),
-                        SwingSupport.formatDateTime(registration.getRegisteredAt()) })
-                .toList();
     }
 }

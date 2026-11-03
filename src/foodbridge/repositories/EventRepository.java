@@ -17,7 +17,7 @@ import foodbridge.patterns.singleton.DatabaseManager;
  */
 public class EventRepository implements Repository<Event> {
     private static final String SELECT_EVENTS =
-            "SELECT e.id, e.title, e.description, e.event_date, e.location, e.required_skill,"
+            "SELECT e.id, e.title, e.description, e.event_date, e.location, e.required_skill, e.status,"
             + " t.id AS type_id, t.name AS type_name"
             + " FROM events e JOIN event_types t ON t.id = e.event_type_id";
 
@@ -77,14 +77,28 @@ public class EventRepository implements Repository<Event> {
         try (Connection c = db.getConnection();
                 PreparedStatement ps = c.prepareStatement(
                         "UPDATE events SET title = ?, description = ?, event_date = ?, location = ?,"
-                        + " event_type_id = ?, required_skill = ? WHERE id = ?")) {
+                        + " event_type_id = ?, required_skill = ? WHERE id = ? AND status = ?")) {
             bind(ps, item);
             ps.setInt(7, item.getId());
+            ps.setString(8, Event.SCHEDULED);
             if (ps.executeUpdate() == 0) {
-                throw new IllegalArgumentException("No event with id " + item.getId());
+                throw new IllegalStateException("Only scheduled events can be updated.");
             }
         } catch (SQLException e) {
             throw new RuntimeException("Could not update event: " + e.getMessage(), e);
+        }
+    }
+
+    /** Returns false if the event is missing or already cancelled. */
+    public boolean cancel(int eventId) {
+        try (Connection c = db.getConnection();
+                PreparedStatement ps = c.prepareStatement("UPDATE events SET status = ? WHERE id = ? AND status = ?")) {
+            ps.setString(1, Event.CANCELLED);
+            ps.setInt(2, eventId);
+            ps.setString(3, Event.SCHEDULED);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not cancel event: " + e.getMessage(), e);
         }
     }
 
@@ -119,6 +133,7 @@ public class EventRepository implements Repository<Event> {
         event.setDate(JdbcSupport.getDateTime(rs, "event_date"));
         event.setLocation(rs.getString("location"));
         event.setRequiredSkill(rs.getString("required_skill"));
+        event.setStatus(rs.getString("status"));
         event.setType(new EventType(rs.getInt("type_id"), rs.getString("type_name")));
         return event;
     }

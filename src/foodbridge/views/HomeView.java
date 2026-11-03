@@ -14,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import foodbridge.controllers.AdminController;
 import foodbridge.controllers.AuthController;
 import foodbridge.controllers.BeneficiaryController;
 import foodbridge.controllers.DonationController;
@@ -29,12 +30,14 @@ import foodbridge.models.users.Beneficiary;
 import foodbridge.models.users.Donor;
 import foodbridge.models.users.User;
 import foodbridge.models.users.Volunteer;
+import foodbridge.views.admin.AdminPermissionsView;
 import foodbridge.views.admin.ImpactReportView;
 import foodbridge.views.admin.ManageBeneficiariesView;
 import foodbridge.views.admin.ManageEventsView;
 import foodbridge.views.admin.ManageUsersView;
 import foodbridge.views.admin.VolunteerAssignmentView;
 import foodbridge.views.auth.LoginView;
+import foodbridge.views.auth.NotificationsView;
 import foodbridge.views.auth.ProfileView;
 import foodbridge.views.beneficiary.BeneficiaryProfileView;
 import foodbridge.views.beneficiary.DonationRequestView;
@@ -51,7 +54,8 @@ import foodbridge.views.volunteer.VolunteerPanelView;
 /**
  * Post-login navigation by role. Every window is closed when the session ends.
  * Donor: donations. Volunteer: volunteer panel, donations. Beneficiary: profile, requests, deliveries.
- * Admin: users, events, assignments, beneficiaries, reports, lookup tables.
+ * Admin: users, events, assignments, beneficiaries, reports, lookup tables, permissions.
+ * Everyone: notifications and contact details.
  */
 public class HomeView implements View {
     private final JFrame frame = new JFrame("FoodBridge - Home");
@@ -81,7 +85,7 @@ public class HomeView implements View {
             navigation.add(moduleButton("My requests", () -> new DonationRequestView(beneficiaries)));
             navigation.add(moduleButton("Received distributions", () -> new ReceivedDistributionsView(beneficiaries)));
         }
-        if (user instanceof Admin) {
+        if (user instanceof Admin admin) {
             BeneficiaryController beneficiaries = new BeneficiaryController(authController);
             LookupController lookups = new LookupController();
             navigation.add(moduleButton("Manage users", () -> new ManageUsersView(new UserController(), user.getId())));
@@ -95,7 +99,9 @@ public class HomeView implements View {
             navigation.add(dialogButton("Event types", () -> new EventTypeView(lookups).show()));
             navigation.add(dialogButton("Food categories", () -> new FoodCategoryView(lookups).show()));
             navigation.add(dialogButton("Units", () -> new UnitView(lookups).show()));
+            navigation.add(moduleButton("My permissions", () -> new AdminPermissionsView(new AdminController(), admin)));
         }
+        navigation.add(moduleButton("Notifications", () -> new NotificationsView(user.getId(), new NotificationController())));
         navigation.add(moduleButton("Contact details", () -> new ProfileView(new UserController(), user)));
         panel.add(navigation, BorderLayout.CENTER);
 

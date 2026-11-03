@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import foodbridge.models.lookups.EventType;
 import foodbridge.models.operations.Event;
 import foodbridge.models.operations.EventRegistration;
 import foodbridge.models.operations.VolunteerHours;
@@ -20,9 +21,10 @@ import foodbridge.patterns.singleton.DatabaseManager;
 public class EventRegistrationRepository implements Repository<EventRegistration> {
     private static final String SELECT_REGISTRATIONS =
             "SELECT r.id, r.registered_at, r.attendance_status, r.volunteer_id, u.name AS volunteer_name,"
-            + " e.id AS event_id, e.title, e.event_date, e.location"
+            + " e.id AS event_id, e.title, e.event_date, e.location, e.status, t.id AS type_id, t.name AS type_name"
             + " FROM event_registrations r"
             + " JOIN events e ON e.id = r.event_id"
+            + " JOIN event_types t ON t.id = e.event_type_id"
             + " JOIN users u ON u.id = r.volunteer_id";
 
     private final DatabaseManager db;
@@ -139,6 +141,8 @@ public class EventRegistrationRepository implements Repository<EventRegistration
         event.setTitle(rs.getString("title"));
         event.setDate(JdbcSupport.getDateTime(rs, "event_date"));
         event.setLocation(rs.getString("location"));
+        event.setStatus(rs.getString("status"));
+        event.setType(new EventType(rs.getInt("type_id"), rs.getString("type_name")));
 
         Volunteer volunteer = new Volunteer();
         volunteer.setId(rs.getInt("volunteer_id"));

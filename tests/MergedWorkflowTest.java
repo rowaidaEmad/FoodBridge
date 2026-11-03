@@ -15,6 +15,7 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.SwingUtilities;
 
+import foodbridge.controllers.AdminController;
 import foodbridge.controllers.AuthController;
 import foodbridge.controllers.DonationController;
 import foodbridge.controllers.EventController;
@@ -30,6 +31,7 @@ import foodbridge.models.lookups.Area;
 import foodbridge.models.lookups.DonationStatus;
 import foodbridge.models.lookups.EventType;
 import foodbridge.models.operations.Event;
+import foodbridge.models.operations.EventRegistration;
 import foodbridge.models.operations.PickupTask;
 import foodbridge.models.users.Admin;
 import foodbridge.models.users.Beneficiary;
@@ -42,11 +44,14 @@ import foodbridge.repositories.UnitRepository;
 import foodbridge.repositories.UserRepository;
 import foodbridge.views.HomeView;
 import foodbridge.views.ModuleView;
+import foodbridge.views.admin.AdminPermissionsView;
 import foodbridge.views.admin.ManageEventsView;
 import foodbridge.views.admin.ManageUsersView;
 import foodbridge.views.auth.LoginView;
+import foodbridge.views.auth.NotificationsView;
 import foodbridge.views.auth.ProfileView;
 import foodbridge.views.lookups.AreaView;
+import foodbridge.views.volunteer.EventRegistrationView;
 
 /** Integration tests for the workflows that join the volunteer and donation code. Never run against application data. */
 public class MergedWorkflowTest {
@@ -94,7 +99,7 @@ public class MergedWorkflowTest {
         contactDetails(donor, beneficiary, volunteer);
         eventLifecycle(volunteer);
         areas();
-        adminPermissions();
+        adminPermissions(admin);
         System.out.println("PASS: " + assertions + " merged workflow/database assertions.");
         if (args.length > 0 && "--gui".equals(args[0])) {
             int before = assertions;
@@ -236,6 +241,7 @@ public class MergedWorkflowTest {
         event.setDate(LocalDateTime.now().plusDays(7).withNano(0));
         event.setLocation("Cairo");
         event.setType(type);
+        event.setRequiredSkill("First aid");
         int id = Math.toIntExact(events.createEvent(event));
         check(id > 0, "An event gets an id");
         check(events.listEvents().stream().anyMatch(e -> e.getId() == id && "Food drive".equals(e.getTitle())), "The event is listed");
@@ -245,7 +251,29 @@ public class MergedWorkflowTest {
         noTitle.setType(type);
         rejects(() -> events.createEvent(noTitle), "An event without a title is rejected");
 
+        check("First aid".equals(events.getEvent(id).getRequiredSkill()), "The required skill is saved");
+        rejects(() -> events.registerVolunteer(id, volunteer.getId()), "A volunteer without the skill is rejected");
+        volunteer.setSkills(List.of("First aid"));
+        new foodbridge.repositories.VolunteerRepository().updateProfile(volunteer.getId(), volunteer.getAvailability(),
+                volunteer.hasTransport(), null, List.of("First aid"), List.of());
         events.registerVolunteer(id, volunteer.getId());
+        assertions++;
+        try {
+            events.registerVolunteer(id, volunteer.getId());
+            throw new AssertionError("Registering twice is rejected");
+        } catch (IllegalStateException expected) {
+            // the message names the volunteer and the event
+        }
+        check(events.listVolunteerRegistrations(volunteer.getId()).stream().anyMatch(r -> r.getEvent().getId() == id),
+                "The registration is listed by volunteer");
+        List<EventRegistration> forEvent = events.listRegistrationsForEvent(id);
+        check(forEvent.size() == 1 && forEvent.get(0).getVolunteer().getId() == volunteer.getId(),
+                "The registration is listed by event");
+        double hoursBefore = ((Volunteer) users.findById(volunteer.getId())).getTotalHours();
+        events.markAttendance(forEvent.get(0).getId(), EventRegistration.ATTENDED, 2.5);
+        check(((Volunteer) users.findById(volunteer.getId())).getTotalHours() == hoursBefore + 2.5, "Attendance credits hours");
+        events.markAttendance(forEvent.get(0).getId(), EventRegistration.ATTENDED, 2.5);
+        check(((Volunteer) users.findById(volunteer.getId())).getTotalHours() == hoursBefore + 2.5, "Hours are credited once");
         int notes = notifications.listForUser(volunteer.getId()).size();
 
         Event changed = new Event();
@@ -253,6 +281,7 @@ public class MergedWorkflowTest {
         changed.setDate(event.getDate().plusDays(1));
         changed.setLocation("Giza");
         changed.setType(type);
+        changed.setRequiredSkill("First aid");
         events.updateEvent(id, changed);
         Event saved = events.listEvents().stream().filter(e -> e.getId() == id).findFirst().orElseThrow();
         check("Bigger food drive".equals(saved.getTitle()) && "Giza".equals(saved.getLocation()), "Event changes save");
@@ -262,10 +291,25 @@ public class MergedWorkflowTest {
         check(notifications.listForUser(volunteer.getId()).size() == notes + 2, "An announcement notifies registered volunteers");
 
         check(events.cancelEvent(id), "An event can be cancelled");
-        check(events.listEvents().stream().noneMatch(e -> e.getId() == id), "A cancelled event is removed");
-        check(events.listRegistrations(volunteer.getId()).stream().noneMatch(r -> r.getEvent().getId() == id), "Its registrations go too");
+        check(events.getEvent(id).isCancelled(), "A cancelled event keeps its row, marked cancelled");
+        check(events.listVolunteerRegistrations(volunteer.getId()).stream().anyMatch(r -> r.getEvent().isCancelled()),
+                "The volunteer's registration shows the cancelled status");
         check(notifications.listForUser(volunteer.getId()).size() == notes + 3, "Cancelling notifies who was registered");
-        check(!events.cancelEvent(id), "Cancelling a missing event returns false");
+        check(!events.cancelEvent(id), "Cancelling twice returns false");
+        check(!events.cancelEvent(Integer.MAX_VALUE), "Cancelling a missing event returns false");
+        assertions += 2;
+        try {
+            events.registerVolunteer(id, volunteer.getId());
+            throw new AssertionError("Registering for a cancelled event is rejected");
+        } catch (IllegalStateException expected) {
+            // cancelled
+        }
+        try {
+            events.updateEvent(id, changed);
+            throw new AssertionError("Updating a cancelled event is rejected");
+        } catch (IllegalStateException expected) {
+            // cancelled
+        }
     }
 
     private static void areas() {
@@ -280,7 +324,7 @@ public class MergedWorkflowTest {
         check(lookups.listAreas().stream().noneMatch(a -> a.getId() == area.getId()), "An area can be deleted");
     }
 
-    private static void adminPermissions() {
+    private static void adminPermissions(Admin saved) {
         Admin admin = new Admin();
         check(!admin.hasPermission("reports"), "No permissions to begin with");
         admin.addPermission(" reports ");
@@ -288,22 +332,33 @@ public class MergedWorkflowTest {
         admin.removePermission("reports");
         check(!admin.hasPermission("reports"), "A permission can be removed");
         rejects(() -> admin.addPermission(" "), "A blank permission is rejected");
+
+        AdminController controller = new AdminController();
+        check(controller.addPermission(saved.getId(), "reports"), "A permission can be stored");
+        check(!controller.addPermission(saved.getId(), "REPORTS"), "A stored permission is not added twice");
+        check(controller.hasPermission(saved.getId(), "Reports"), "A stored permission is found");
+        check(controller.removePermission(saved.getId(), "reports"), "A stored permission can be removed");
+        check(controller.getPermissionCount(saved.getId()) == 0, "No stored permissions remain");
     }
 
     // --- Screens: each opens without an error dialog, and Home offers each role the right buttons. ---------
 
     private static void screens(Donor donor, Volunteer volunteer, Beneficiary beneficiary, Admin admin) throws Exception {
         AuthController auth = new AuthController();
-        check(buttons(donor, auth).containsAll(Set.of("Add donation", "My donations (pay / cancel)", "Contact details", "Logout")), "Donor buttons");
+        check(buttons(donor, auth).containsAll(Set.of("Add donation", "My donations (pay / cancel)", "Notifications", "Contact details", "Logout")), "Donor buttons");
         check(buttons(volunteer, auth).containsAll(Set.of("Volunteer panel", "Add donation", "My donations (pay / cancel)", "Contact details")), "Volunteer buttons");
         check(buttons(beneficiary, auth).containsAll(Set.of("My profile", "My requests", "Received distributions", "Contact details")), "Beneficiary buttons");
         check(buttons(admin, auth).containsAll(Set.of("Manage users", "Manage events", "Assign volunteers", "Manage beneficiaries",
-                "Impact reports", "Areas", "Donation statuses", "Event types", "Food categories", "Units", "Contact details")), "Admin buttons");
+                "Impact reports", "Areas", "Donation statuses", "Event types", "Food categories", "Units", "My permissions",
+                "Notifications", "Contact details")), "Admin buttons");
         check(!buttons(donor, auth).contains("Manage users"), "A donor cannot reach admin screens");
 
         opens(() -> new ManageUsersView(userController, admin.getId()));
         opens(() -> new ManageEventsView(events));
         opens(() -> new AreaView(lookups));
+        opens(() -> new NotificationsView(volunteer.getId(), notifications));
+        opens(() -> new EventRegistrationView(volunteer.getId(), events));
+        opens(() -> new AdminPermissionsView(new AdminController(), admin));
         opens(() -> new ProfileView(userController, users.findById(donor.getId())));
     }
 

@@ -5,9 +5,8 @@ Donors give food or money, volunteers pick it up and deliver it, beneficiaries r
 and an admin manages users, lookup tables, events and impact reports.
 
 > **Status: implemented.** Auth, donations and payments, receipts, beneficiaries, volunteers,
-> pickup tasks, events, certificates, notifications, reports and the lookup tables all work through
-> Swing, controllers and PostgreSQL repositories. `NotificationLogger` is the one class left as a
-> skeleton; nothing uses it yet.
+> pickup tasks, events, certificates, notifications, admin permissions, reports and the lookup tables
+> all work through Swing, controllers and PostgreSQL repositories.
 
 ## Database (PostgreSQL)
 

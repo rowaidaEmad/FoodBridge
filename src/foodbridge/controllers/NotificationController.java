@@ -9,13 +9,22 @@ import foodbridge.repositories.NotificationRepository;
  * A user's notifications.
  */
 public class NotificationController {
-    private final NotificationRepository notificationRepository = new NotificationRepository();
+    private NotificationRepository notificationRepository;
+
+    public NotificationController() {
+        notificationRepository = new NotificationRepository();
+    }
 
     public List<Notification> listForUser(int userId) {
         return notificationRepository.findByRecipient(userId);
     }
 
     public void markAsRead(int notificationId) {
-        notificationRepository.markRead(notificationId);
+        Notification notification = notificationRepository.findById(notificationId);
+        if (notification == null) {
+            throw new IllegalArgumentException("No notification with id " + notificationId);
+        }
+        notification.markAsRead();
+        notificationRepository.update(notification);
     }
 }

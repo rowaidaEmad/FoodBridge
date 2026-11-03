@@ -24,16 +24,20 @@ public class EventRegistration {
     }
 
     public EventRegistration(Event event, Volunteer volunteer) {
+        if (event == null || volunteer == null) {
+            throw new IllegalArgumentException("Event and volunteer are required");
+        }
         this.event = event;
         this.volunteer = volunteer;
         this.registeredAt = LocalDateTime.now();
     }
 
     public void updateAttendance(String status) {
-        if (!VALID_STATUSES.contains(status)) {
+        String normalized = status == null ? "" : status.trim().toUpperCase();
+        if (!VALID_STATUSES.contains(normalized)) {
             throw new IllegalArgumentException("Unknown attendance status: " + status);
         }
-        this.attendanceStatus = status;
+        this.attendanceStatus = normalized;
     }
 
     public int getId() {

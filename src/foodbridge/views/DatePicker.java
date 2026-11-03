@@ -1,6 +1,7 @@
 package foodbridge.views;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
@@ -40,7 +41,8 @@ public class DatePicker extends JPanel {
         super(new BorderLayout(2, 0));
         field.setEditable(false);
         // Keep the normal white look; read-only fields are grey by default and look disabled.
-        field.setBackground(UIManager.getColor("TextField.background"));
+        // A plain Color (not the look-and-feel's ColorUIResource), or the look-and-feel greys it again.
+        field.setBackground(new Color(UIManager.getColor("TextField.background").getRGB()));
         field.setToolTipText("Click to pick a date");
         field.addMouseListener(new MouseAdapter() {
             @Override

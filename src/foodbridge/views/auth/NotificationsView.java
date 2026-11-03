@@ -1,75 +1,61 @@
 package foodbridge.views.auth;
 
 import java.awt.BorderLayout;
-import java.awt.FlowLayout;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
 
 import foodbridge.controllers.NotificationController;
-import foodbridge.views.SwingSupport;
-import foodbridge.views.View;
+import foodbridge.models.operations.Notification;
+import foodbridge.views.ModuleView;
 
 /**
- * Screen; talks only to NotificationController.
+ * Screen; talks only to NotificationController. The logged-in user's notifications, newest first.
  */
-public class NotificationsView implements View {
-    private static final int MESSAGE_COLUMN_WIDTH = 400;
+public class NotificationsView extends ModuleView {
+    private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
-    private final int userId;
     private final NotificationController notificationController;
-    private final JFrame frame = new JFrame("FoodBridge - Notifications");
-    private final JTable table = SwingSupport.readOnlyTable("ID", "Message", "Status", "Date");
+    private final int userId;
+    private final DefaultTableModel rows = tableModel("ID", "Date", "Message", "Status");
+    private final JTable table = table(rows);
 
     public NotificationsView(int userId, NotificationController notificationController) {
-        this.userId = userId;
+        super("FoodBridge - Notifications", 800, 480);
         this.notificationController = notificationController;
+        this.userId = userId;
+        table.getColumnModel().getColumn(2).setPreferredWidth(450);
 
-        table.getColumnModel().getColumn(1).setPreferredWidth(MESSAGE_COLUMN_WIDTH);
-
-        JButton readButton = new JButton("Mark as Read");
-        readButton.addActionListener(e -> markAsRead());
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        actions.add(readButton);
-
-        JPanel content = new JPanel(new BorderLayout(8, 8));
-        content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        content.add(SwingSupport.scroll(table, 620, 280), BorderLayout.CENTER);
+        JPanel actions = new JPanel();
+        actions.add(button("Mark selected as read", this::markRead));
+        actions.add(button("Refresh", this::refresh));
+        content.add(new JScrollPane(table), BorderLayout.CENTER);
         content.add(actions, BorderLayout.SOUTH);
-
-        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.add(content);
-        frame.pack();
-        frame.setLocationRelativeTo(null);
     }
 
     @Override
-    public void show() {
-        SwingSupport.attempt(frame, () -> {
-            refresh();
-            frame.setVisible(true);
+    protected void refresh() {
+        task(() -> notificationController.listForUser(userId), list -> {
+            rows.setRowCount(0);
+            for (Notification n : list) {
+                rows.addRow(new Object[] { n.getId(), n.getCreatedAt().format(WHEN), n.getMessage(),
+                        n.isRead() ? "Read" : "New" });
+            }
         });
     }
 
-    private void markAsRead() {
-        SwingSupport.attempt(frame, () -> {
-            notificationController.markAsRead(SwingSupport.selectedId(table));
-            refresh();
-        });
-    }
-
-    private void refresh() {
-        SwingSupport.setRows(table, rows());
-    }
-
-    private List<Object[]> rows() {
-        return notificationController.listForUser(userId).stream()
-                .map(notification -> new Object[] { notification.getId(), notification.getMessage(),
-                        notification.isRead() ? "Read" : "Unread", SwingSupport.formatDateTime(notification.getCreatedAt()) })
-                .toList();
+    private void markRead() {
+        int row = table.getSelectedRow();
+        if (row < 0) {
+            throw new IllegalArgumentException("Select a notification first.");
+        }
+        int id = ((Number) table.getValueAt(row, 0)).intValue();
+        task(() -> {
+            notificationController.markAsRead(id);
+            return true;
+        }, ok -> refresh());
     }
 }

@@ -8,7 +8,8 @@ import foodbridge.models.lookups.EventType;
 import foodbridge.views.View;
 
 /**
- * Screen; talks only to LookupController. Admin CRUD on event types.
+ * Screen; talks only to LookupController. Admin CRUD on event types
+ * (add / list / rename / delete, as in the FoodBridgeColdStart console menu).
  */
 public class EventTypeView implements View {
     private LookupController lookupController;

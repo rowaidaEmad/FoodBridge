@@ -52,14 +52,15 @@ cls("Views", "mvc", "View layer", fields=[
     "VolunteerPanelView, VolunteerProfileView, PickupTasksView,",
     "EventRegistrationView, HoursCertificateView",
     "BeneficiaryProfileView, DonationRequestView, ReceivedDistributionsView",
-    "ManageUsersView, ManageBeneficiariesView, ManageEventsView, ImpactReportView, VolunteerAssignmentView",
+    "ManageUsersView, ManageBeneficiariesView, ManageEventsView, ImpactReportView, VolunteerAssignmentView,",
+    "AdminPermissionsView",
     "AreaView, DonationStatusView, EventTypeView, FoodCategoryView, UnitView, LookupTableDialog"])
 cls("Controllers", "mvc", "Controller layer", fields=[
-    "AuthController, UserController, VolunteerController, DonationController,",
+    "AuthController, UserController, AdminController, VolunteerController, DonationController,",
     "PickupController, BeneficiaryController, EventController,",
     "NotificationController, ReportController, LookupController"])
 
-cls("Services", "mvc", "Service layer", fields=["All 7 service classes joined below"])
+cls("Services", "mvc", "Service layer", fields=["All 8 service classes joined below"])
 
 # Strategy: donations
 cls("DonationService", "strategy", tags=[("strategy", "Strategy: Context"), ("factory", "Factory: Client")],
@@ -171,10 +172,19 @@ cls("Area", "lookup", "lookup", fields=["- id: int", "- city: String", "- distri
     methods=["+ Area(id: int, city: String, district: String)"])
 cls("Admin", "model", fields=["- permissions: Set<String>"],
     methods=["+ hasPermission(p: String): boolean", "+ addPermission(p: String): void",
-             "+ removePermission(p: String): void"])
+             "+ removePermission(p: String): void", "+ normalize(permission: String): String {static}"])
 cls("Donor", "model", fields=["- donorType: String", "- organizationName: String"])
 cls("Beneficiary", "model", fields=["- householdSize: int", "- needs: String"],
     methods=["+ updateNeeds(needs: String): void"])
+
+# Admin permissions
+cls("AdminService", "mvc", "Service layer", fields=["- repository: AdminRepository {final}"], methods=[
+    "+ AdminService()", "+ AdminService(repository: AdminRepository)", "+ isAdmin(adminId: int): boolean",
+    "+ getPermissions(adminId: int): Set<String>", "+ hasPermission(adminId: int, permission: String): boolean",
+    "+ addPermission(adminId: int, permission: String): boolean",
+    "+ removePermission(adminId: int, permission: String): boolean", "+ getPermissionCount(adminId: int): int",
+    "+ hasAnyPermission(adminId: int, permissions: Set<String>): boolean", "+ loadPermissions(admin: Admin): void",
+    "- validateAdmin(adminId: int): void"])
 
 # Volunteer work
 cls("PickupTaskService", "mvc", "Service layer",
@@ -276,45 +286,50 @@ cls("SignatureDecorator", "decorator", tags=[("decorator", "ConcreteDecorator")]
 
 # Observer and events
 cls("EventService", "observer", tags=[("observer", "Client")],
-    fields=["- repository: EventRepository", "- registrationRepository: EventRegistrationRepository",
-            "- volunteerRepository: VolunteerRepository", "- notificationRepository: NotificationRepository",
-            "- publisher: EventPublisher"],
-    methods=["+ create(value: Event): long", "+ findById(id: long): Event", "+ list(): List<Event>",
+    fields=["- repository: EventRepository {final}", "- registrationRepository: EventRegistrationRepository {final}",
+            "- volunteerRepository: VolunteerRepository {final}", "- notificationRepository: NotificationRepository {final}",
+            "- publisher: EventPublisher {final}"],
+    methods=["+ EventService()", "+ create(value: Event): long", "+ findById(id: long): Event", "+ list(): List<Event>",
              "+ update(event: Event): boolean", "+ updateEvent(id: int, data: Event): void",
              "+ cancelEvent(eventId: long): boolean",
              "+ registerVolunteer(eventId: int, volunteerId: int): void",
-             "+ listRegistrations(volunteerId: int): List<EventRegistration>",
              "+ listRegistrationsForEvent(eventId: int): List<EventRegistration>",
+             "+ listVolunteerRegistrations(volunteerId: int): List<EventRegistration>",
              "+ markAttendance(registrationId: int, status: String, hours: double): void",
              "+ announceChange(e: Event, msg: String): void",
-             "- notifyRegistered(event: Event, message: String, registrations: List<EventRegistration>): void",
-             "- requireDetails(event: Event): void", "- requireEvent(id: int): Event"])
+             "+ subscribe(eventId: long, observer: EventObserver): void",
+             "+ unsubscribe(eventId: long, observer: EventObserver): void",
+             "+ publisher(): EventPublisher",
+             "- loadEventObservers(): void", "- observerFor(volunteerId: int): VolunteerObserver",
+             "- validate(event: Event): void {static}", "- requireEvent(id: int): Event"])
 cls("Subject", "observer", "interface", tags=[("observer", "Subject")],
     methods=["+ registerObserver(o: EventObserver): void", "+ removeObserver(o: EventObserver): void",
              "+ notifyObservers(): void"])
 cls("EventPublisher", "observer", tags=[("observer", "ConcreteSubject")],
     fields=["- ALL_EVENTS: int {static, final}", "- observersByEvent: Map<Integer, List<EventObserver>>",
-            "- currentEvent: Event", "- currentMessage: String"],
-    methods=["+ registerObserver(o: EventObserver): void", "+ registerObserver(eventId: int, o: EventObserver): void",
-             "+ removeObserver(o: EventObserver): void", "+ clearObservers(eventId: int): void",
-             "+ notifyObservers(): void", "+ updateEvent(event: Event, message: String): void",
-             "- notifyList(key: int): void"])
+            "- lastEvent: Event", "- lastMessage: String"],
+    methods=["+ EventPublisher()", "+ registerObserver(o: EventObserver): void", "+ removeObserver(o: EventObserver): void",
+             "+ notifyObservers(): void", "+ notifyObservers(event: Event, message: String): void",
+             "+ updateEvent(event: Event): void", "+ subscribe(eventId: int, observer: EventObserver): void",
+             "+ unsubscribe(eventId: int, observer: EventObserver): void", "+ countObservers(eventId: int): int"])
 cls("EventObserver", "observer", "interface", tags=[("observer", "Observer")],
     methods=["+ update(event: Event, message: String): void"])
 cls("VolunteerObserver", "observer", tags=[("observer", "ConcreteObserver")],
-    fields=["- volunteerId: int {final}", "- notificationRepository: NotificationRepository {final}"],
-    methods=["+ VolunteerObserver(volunteerId: int, notificationRepository: NotificationRepository)",
-             "+ update(event: Event, message: String): void"])
+    fields=["- volunteerId: int", "- repository: NotificationRepository"],
+    methods=["+ VolunteerObserver(volunteerId: int)",
+             "+ VolunteerObserver(volunteerId: int, repository: NotificationRepository)",
+             "+ update(event: Event, message: String): void", "+ equals(other: Object): boolean", "+ hashCode(): int"])
 cls("NotificationLogger", "observer", tags=[("observer", "ConcreteObserver")],
     fields=["- repository: NotificationRepository"],
     methods=["+ NotificationLogger(repository: NotificationRepository)",
              "+ update(event: Event, message: String): void"])
 cls("Notification", "model", fields=[
-    "- id: int", "- recipientId: int", "- message: String", "- read: boolean", "- createdAt: LocalDateTime"],
+    "+ PENDING, READ: String {static, final}", "- id: int", "- recipientId: int", "- message: String", "- read: boolean", "- createdAt: LocalDateTime"],
     methods=["+ Notification(recipientId: int, message: String)", "+ markAsRead(): void"])
 cls("Event", "model", fields=[
-    "- id: int", "- title: String", "- description: String", "- date: LocalDateTime", "- location: String",
-    "- requiredSkill: String"], methods=["+ reschedule(date: LocalDateTime): void"])
+    "+ SCHEDULED, CANCELLED: String {static, final}", "- id: int", "- title: String", "- description: String",
+    "- date: LocalDateTime", "- location: String", "- requiredSkill: String", "- status: String"],
+    methods=["+ reschedule(date: LocalDateTime): void", "+ isCancelled(): boolean"])
 cls("EventType", "lookup", "lookup", fields=["- id: int", "- name: String"],
     methods=["+ EventType(id: int, name: String)"])
 cls("EventRegistration", "model", fields=[
@@ -325,7 +340,7 @@ cls("EventRegistration", "model", fields=[
 # Back end of the MVC chain
 cls("Repositories", "mvc", "Repository layer", fields=[
     "Repository<T>: add, findById, findAll, update, delete",
-    "UserRepository, VolunteerRepository, DonationRepository, ReceiptRepository,",
+    "UserRepository, AdminRepository, VolunteerRepository, DonationRepository, ReceiptRepository,",
     "PickupTaskRepository, DistributionRepository, DonationRequestRepository,",
     "EventRepository, EventRegistrationRepository, NotificationRepository,",
     "CertificateRepository, and one per lookup table; JdbcSupport (shared helper)"])
@@ -358,7 +373,7 @@ uses("Views", "Controllers", "calls")
 uses("Controllers", "Services", "calls")
 uses("Services", "Repositories", "calls")
 for service in ["DonationService", "ReceiptService", "PickupTaskService", "VolunteerService", "VolunteerMatchingService",
-                "CertificateService", "EventService"]:
+                "CertificateService", "EventService", "AdminService"]:
     edge("Services", service, "member")
 uses("Repositories", "DatabaseManager", "getInstance")
 edge("DatabaseManager", "DatabaseManager", "assoc", "uniqueInstance", "", "1")
@@ -417,11 +432,12 @@ assoc("HoursBreakdownDecorator", "VolunteerHours", "", "", "0..*")
 # Observer
 assoc("EventService", "EventPublisher", "", "", "1")
 uses("EventService", "VolunteerObserver", "create")
+uses("EventService", "NotificationLogger", "create")
 uses("EventService", "Event")
 uses("EventService", "EventRegistration", "create")
 implements("EventPublisher", "Subject")
 aggregate("EventPublisher", "EventObserver", "notifies", "0..*")
-assoc("EventPublisher", "Event", "currentEvent", "", "0..1")
+assoc("EventPublisher", "Event", "lastEvent", "", "0..1")
 implements("VolunteerObserver", "EventObserver")
 implements("NotificationLogger", "EventObserver")
 uses("VolunteerObserver", "Notification", "create")
@@ -461,6 +477,7 @@ uses("ImpactReport", "Distribution")
 uses("VolunteerService", "Volunteer")
 uses("PickupTaskService", "PickupTask")
 uses("PickupTaskService", "Notification", "create")
+uses("AdminService", "Admin")
 
 # --- Sizes ------------------------------------------------------------------------------------------
 _fonts = {}

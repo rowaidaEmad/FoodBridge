@@ -6,8 +6,12 @@ import foodbridge.models.lookups.EventType;
 
 /**
  * Core domain. Of one EventType; has 0..* EventRegistration.
+ * status (SCHEDULED / CANCELLED) comes from the FoodBridgeColdStart branch: cancelled events can't be edited.
  */
 public class Event {
+    public static final String SCHEDULED = "SCHEDULED";
+    public static final String CANCELLED = "CANCELLED";
+
     private int id;
     private String title;
     private String description;
@@ -15,18 +19,16 @@ public class Event {
     private String location;
     private EventType type;
     private String requiredSkill;
+    private String status = SCHEDULED;
 
     public Event() {
-    }
-
-    public void reschedule(LocalDateTime date) {
-        this.date = date;
     }
 
     public int getId() {
         return id;
     }
 
+    /** Set by EventRepository when the event is saved or loaded. */
     public void setId(int id) {
         this.id = id;
     }
@@ -36,7 +38,10 @@ public class Event {
     }
 
     public void setTitle(String title) {
-        this.title = title;
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Event title is required");
+        }
+        this.title = title.trim();
     }
 
     public String getDescription() {
@@ -44,7 +49,7 @@ public class Event {
     }
 
     public void setDescription(String description) {
-        this.description = description;
+        this.description = description == null || description.isBlank() ? null : description.trim();
     }
 
     public LocalDateTime getDate() {
@@ -55,12 +60,19 @@ public class Event {
         this.date = date;
     }
 
+    public void reschedule(LocalDateTime date) {
+        if (date == null) {
+            throw new IllegalArgumentException("Event date is required");
+        }
+        this.date = date;
+    }
+
     public String getLocation() {
         return location;
     }
 
     public void setLocation(String location) {
-        this.location = location;
+        this.location = location == null || location.isBlank() ? null : location.trim();
     }
 
     public EventType getType() {
@@ -68,6 +80,9 @@ public class Event {
     }
 
     public void setType(EventType type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Event type is required");
+        }
         this.type = type;
     }
 
@@ -76,6 +91,24 @@ public class Event {
     }
 
     public void setRequiredSkill(String requiredSkill) {
-        this.requiredSkill = requiredSkill;
+        this.requiredSkill = requiredSkill == null || requiredSkill.isBlank() ? null : requiredSkill.trim();
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    /** Set by EventRepository when loading. */
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean isCancelled() {
+        return CANCELLED.equals(status);
+    }
+
+    @Override
+    public String toString() {
+        return "#" + id + " - " + title;
     }
 }
