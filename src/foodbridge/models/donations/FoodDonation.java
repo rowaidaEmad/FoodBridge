@@ -1,18 +1,29 @@
 package foodbridge.models.donations;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+
+import foodbridge.models.users.Donor;
 
 /**
  * FACTORY METHOD - ConcreteProduct. Contains 1..* FoodItem (composition).
  */
 public class FoodDonation extends Donation {
-    private List<FoodItem> items;
+    private List<FoodItem> items = new ArrayList<>();
     private LocalDate expiryDate;
     private String pickupWindow;
 
-    public FoodDonation() {
-        // TODO: implement
+    public FoodDonation(Donor donor) {
+        this.donor = donor;
+    }
+
+    public String getPickupWindow() {
+        return pickupWindow;
+    }
+
+    public void setPickupWindow(String window) {
+        this.pickupWindow = window;
     }
 
     public void addItem(FoodItem item) {

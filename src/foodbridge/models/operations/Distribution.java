@@ -19,16 +19,44 @@ public class Distribution {
     private BigDecimal quantity;
 
     public Distribution() {
-        // TODO: implement
     }
 
-    public BigDecimal getQuantity() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+    public Distribution(FoodDonation donation, Beneficiary beneficiary, Volunteer volunteer, LocalDate date) {
+        this.donation = donation;
+        this.beneficiary = beneficiary;
+        this.volunteer = volunteer;
+        this.date = date;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public FoodDonation getDonation() {
+        return donation;
+    }
+
+    public Beneficiary getBeneficiary() {
+        return beneficiary;
+    }
+
+    public Volunteer getVolunteer() {
+        return volunteer;
     }
 
     public LocalDate getDate() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return date;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
     }
 }

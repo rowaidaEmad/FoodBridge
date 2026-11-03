@@ -17,8 +17,11 @@ public abstract class Donation {
     protected Area area;
 
     public int getId() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public void updateStatus(DonationStatus s) {
