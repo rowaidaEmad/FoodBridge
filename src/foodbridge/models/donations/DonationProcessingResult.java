@@ -1,24 +1,28 @@
 package foodbridge.models.donations;
 
 /**
- * Returned by every DonationProcessingStrategy.
+ * Returned by every DonationProcessingStrategy (helper, not a pattern role).
  */
 public class DonationProcessingResult {
-    private boolean successful;
-    private String reference;
-    private String message;
+    private final boolean successful;
+    private final String reference;
+    private final String message;
 
     public DonationProcessingResult(boolean successful, String reference, String message) {
-        // TODO: implement
+        this.successful = successful;
+        this.reference = reference;
+        this.message = message;
     }
 
     public boolean isSuccessful() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return successful;
+    }
+
+    public String getReference() {
+        return reference;
     }
 
     public String getMessage() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return message;
     }
 }

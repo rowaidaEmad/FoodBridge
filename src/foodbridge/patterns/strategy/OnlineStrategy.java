@@ -1,14 +1,14 @@
 package foodbridge.patterns.strategy;
 
-import foodbridge.models.donations.Donation;
 import foodbridge.models.donations.DonationProcessingResult;
+import foodbridge.models.donations.MoneyDonation;
 
 /**
  * STRATEGY - ConcreteStrategy.
  */
 public class OnlineStrategy implements DonationProcessingStrategy {
     @Override
-    public DonationProcessingResult process(Donation donation) {
+    public DonationProcessingResult process(MoneyDonation donation) {
         // TODO: implement
         throw new UnsupportedOperationException("Not implemented yet");
     }
