@@ -13,31 +13,40 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import foodbridge.controllers.AdminController;
 import foodbridge.controllers.AuthController;
 import foodbridge.controllers.BeneficiaryController;
 import foodbridge.controllers.DonationController;
+import foodbridge.controllers.EventController;
 import foodbridge.controllers.LookupController;
+import foodbridge.controllers.NotificationController;
 import foodbridge.controllers.ReportController;
 import foodbridge.models.users.Admin;
 import foodbridge.models.users.Beneficiary;
 import foodbridge.models.users.Donor;
 import foodbridge.models.users.User;
+import foodbridge.models.users.Volunteer;
+import foodbridge.views.admin.AdminPermissionsView;
 import foodbridge.views.admin.ImpactReportView;
 import foodbridge.views.admin.ManageBeneficiariesView;
+import foodbridge.views.admin.ManageEventsView;
 import foodbridge.views.auth.LoginView;
+import foodbridge.views.auth.NotificationsView;
 import foodbridge.views.beneficiary.BeneficiaryProfileView;
 import foodbridge.views.beneficiary.DonationRequestView;
 import foodbridge.views.beneficiary.ReceivedDistributionsView;
 import foodbridge.views.donor.AddDonationView;
 import foodbridge.views.donor.PayDonationView;
 import foodbridge.views.lookups.DonationStatusView;
+import foodbridge.views.lookups.EventTypeView;
 import foodbridge.views.lookups.FoodCategoryView;
 import foodbridge.views.lookups.UnitView;
+import foodbridge.views.volunteer.EventRegistrationView;
 
 /**
  * Post-login navigation by role. Module windows are closed when the session ends.
- * Donor: donations. Beneficiary: profile, requests, deliveries. Admin: beneficiaries, reports, lookup tables.
- * TODO: volunteer screens.
+ * Donor: donations. Beneficiary: profile, requests, deliveries. Volunteer: events.
+ * Admin: beneficiaries, reports, lookup tables, events, permissions. Everyone: notifications.
  */
 public class HomeView implements View {
     private final JFrame frame = new JFrame("FoodBridge - Home");
@@ -59,7 +68,7 @@ public class HomeView implements View {
             navigation.add(moduleButton("My profile", () -> new BeneficiaryProfileView(beneficiaries)));
             navigation.add(moduleButton("My requests", () -> new DonationRequestView(beneficiaries)));
             navigation.add(moduleButton("Received distributions", () -> new ReceivedDistributionsView(beneficiaries)));
-        } else if (user instanceof Admin) {
+        } else if (user instanceof Admin admin) {
             BeneficiaryController beneficiaries = new BeneficiaryController(authController);
             LookupController lookups = new LookupController();
             navigation.add(moduleButton("Manage beneficiaries", () -> new ManageBeneficiariesView(beneficiaries)));
@@ -67,9 +76,15 @@ public class HomeView implements View {
             navigation.add(dialogButton("Donation statuses", () -> new DonationStatusView(lookups).show()));
             navigation.add(dialogButton("Food categories", () -> new FoodCategoryView(lookups).show()));
             navigation.add(dialogButton("Units", () -> new UnitView(lookups).show()));
+            navigation.add(moduleButton("Manage events", () -> new ManageEventsView(new EventController())));
+            navigation.add(dialogButton("Event types", () -> new EventTypeView(lookups).show()));
+            navigation.add(moduleButton("My permissions", () -> new AdminPermissionsView(new AdminController(), admin)));
+        } else if (user instanceof Volunteer volunteer) {
+            navigation.add(moduleButton("Events", () -> new EventRegistrationView(new EventController(), volunteer)));
         } else {
             navigation.add(new JLabel("Screens for this role are coming soon."));
         }
+        navigation.add(moduleButton("Notifications", () -> new NotificationsView(new NotificationController(), user)));
         panel.add(navigation, BorderLayout.CENTER);
 
         JButton logout = new JButton("Logout");

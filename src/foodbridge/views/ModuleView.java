@@ -50,8 +50,10 @@ public abstract class ModuleView implements View {
         }.execute();
     }
     private void disable(Component component,Map<Component,Boolean> enabled) {
-        enabled.put(component,component.isEnabled()); component.setEnabled(false);
+        // Record the children before disabling the parent: some (JSpinner) disable their children too.
+        enabled.put(component,component.isEnabled());
         if(component instanceof Container container) for(Component child:container.getComponents()) disable(child,enabled);
+        component.setEnabled(false);
     }
     protected final void error(Throwable e) {
         String message=e instanceof NumberFormatException ? "Enter a valid number." : e.getMessage();
