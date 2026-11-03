@@ -1,5 +1,8 @@
 """Generates the FoodBridge class diagram as one connected SVG + PNG, coloured by design pattern.
 
+Describes the combined code of the Merged branch (volunteer, pickup, events, certificates) and the
+origin/donation-beneficiary branch (donations, payments, receipts, beneficiaries, reports).
+
 First time only:  npm install --prefix docs/class-diagram
 Then:             python docs/class-diagram/generate_class_diagram.py
 
@@ -17,22 +20,23 @@ OUT_DIR = os.path.dirname(os.path.abspath(__file__))
 FONT_DIR = r"C:\Windows\Fonts"
 FONT = "Arial, Helvetica, sans-serif"
 
-# role: (strong colour, light colour)
+# role: (border colour, fill colour). Same scheme as the Lucidchart figure in the requirements document:
+# pastel boxes with a coloured border per design pattern, white boxes with a black border for core classes.
+CORE = ("#000000", "#FFFFFF")
 COLORS = {
-    "model": ("#475569", "#F1F5F9"),
-    "lookup": ("#94A3B8", "#F8FAFC"),
-    "strategy": ("#1D4ED8", "#EFF6FF"),
-    "factory": ("#C2410C", "#FFF7ED"),
-    "decorator": ("#7E22CE", "#FAF5FF"),
-    "observer": ("#15803D", "#F0FDF4"),
-    "singleton": ("#BE123C", "#FFF1F2"),
-    "mvc": ("#0E7490", "#ECFEFF"),
+    "model": CORE,
+    "lookup": CORE,
+    "mvc": CORE,
+    "singleton": ("#2E8B57", "#D4F1E4"),
+    "factory": ("#7B5BB5", "#E6DAF8"),
+    "strategy": ("#D9822B", "#FFE3CC"),
+    "observer": ("#3A7BC8", "#D3E8FA"),
+    "decorator": ("#C2527A", "#FBD9E3"),
 }
-INK = "#1E293B"
-LINE = "#64748B"
-LEGEND = [("model", "Model (MVC): domain class"), ("lookup", "Lookup table"), ("strategy", "Strategy"),
-          ("factory", "Factory Method"), ("decorator", "Decorator"), ("observer", "Observer"),
-          ("singleton", "Singleton"), ("mvc", "MVC layers")]
+INK = "#000000"
+LINE = "#333333"
+LEGEND = [("singleton", "Singleton"), ("factory", "Factory Method"), ("strategy", "Strategy"),
+          ("observer", "Observer"), ("decorator", "Decorator"), ("model", "Core domain classes (no pattern)")]
 
 # --- Classes, in family order. ELK keeps this left-to-right order where it can. ---------------------
 CLASSES = []
@@ -45,13 +49,14 @@ def cls(name, role, stereotype=None, fields=(), methods=(), tags=(), abstract=Fa
 
 # MVC layers
 cls("Views", "mvc", "View layer", fields=[
-    "LoginView, RegisterView, HomeView, ProfileView, NotificationsView",
+    "View (interface), ModuleView (abstract), HomeView, BackBar, DatePicker, SwingSupport",
+    "LoginView, RegisterView, ProfileView, NotificationsView",
     "AddDonationView, PayDonationView, ReceiptView",
     "VolunteerPanelView, VolunteerProfileView, PickupTasksView,",
     "EventRegistrationView, HoursCertificateView",
-    "DonationRequestView, ReceivedDistributionsView",
-    "ManageUsersView, ManageEventsView, ImpactReportView, VolunteerAssignmentView",
-    "AreaView, DonationStatusView, EventTypeView, FoodCategoryView, UnitView"])
+    "BeneficiaryProfileView, DonationRequestView, ReceivedDistributionsView",
+    "ManageUsersView, ManageBeneficiariesView, ManageEventsView, ImpactReportView, VolunteerAssignmentView",
+    "AreaView, DonationStatusView, EventTypeView, FoodCategoryView, UnitView, LookupTableDialog"])
 cls("Controllers", "mvc", "Controller layer", fields=[
     "AuthController, UserController, VolunteerController, DonationController,",
     "PickupController, BeneficiaryController, EventController,",
@@ -61,153 +66,262 @@ cls("Services", "mvc", "Service layer", fields=["All 7 service classes joined be
 
 # Strategy: donations
 cls("DonationService", "strategy", tags=[("strategy", "Strategy: Context"), ("factory", "Factory: Client")],
-    fields=["- factories: Map<String, DonationFactory>", "- strategies: Map<String, DonationProcessingStrategy>"],
-    methods=["+ createDonation(type, request): int", "+ processMoneyDonation(id): Result"])
+    fields=["- factories: Map<String, DonationFactory>", "- strategies: Map<String, DonationProcessingStrategy>",
+            "- donationRepository: DonationRepository", "- donationStatusRepository: DonationStatusRepository",
+            "- userRepository: UserRepository", "- pickupTaskRepository: PickupTaskRepository"],
+    methods=["+ DonationService()", "+ DonationService(donationRepository: DonationRepository)",
+             "+ registerStrategy(method: String, strategy: DonationProcessingStrategy): void",
+             "+ createDonation(type: String, request: DonationDetails): int",
+             "+ processMoneyDonation(id: int): DonationProcessingResult",
+             "- registerDefaultFactories(): void", "- registerDefaultStrategies(): void"])
 cls("DonationProcessingStrategy", "strategy", "interface", tags=[("strategy", "Strategy")],
-    methods=["+ process(donation): DonationProcessingResult"])
-cls("CashStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")], methods=["+ process(donation): Result"])
-cls("CheckStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")], methods=["+ process(donation): Result"])
-cls("OnlineStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")], methods=["+ process(donation): Result"])
-cls("DonationProcessingResult", "strategy", "helper",
-    fields=["- successful: boolean", "- reference: String", "- message: String"])
+    methods=["+ process(donation: MoneyDonation): DonationProcessingResult"])
+cls("CashStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")],
+    methods=["+ process(donation: MoneyDonation): DonationProcessingResult",
+             "- invalid(donation: MoneyDonation): DonationProcessingResult"])
+cls("CheckStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")],
+    methods=["+ process(donation: MoneyDonation): DonationProcessingResult",
+             "- invalid(donation: MoneyDonation): DonationProcessingResult"])
+cls("OnlineStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")],
+    fields=["- GATEWAY_LIMIT: double {static, final}"],
+    methods=["+ process(donation: MoneyDonation): DonationProcessingResult", "- generateTransactionId(): String",
+             "- invalid(donation: MoneyDonation): DonationProcessingResult"])
+cls("DonationProcessingResult", "strategy", "datatype",
+    fields=["- successful: boolean {final}", "- reference: String {final}", "- message: String {final}"],
+    methods=["+ DonationProcessingResult(successful: boolean, reference: String, message: String)"])
 
 # Factory Method: donations
 cls("DonationFactory", "factory", "abstract", abstract=True, tags=[("factory", "Creator")],
-    methods=["+ registerDonation(donor, details): Donation", "+ createDonation(donor, details): Donation {abstract}"])
+    methods=["+ registerDonation(donor: Donor, details: DonationDetails): Donation",
+             "+ createDonation(donor: Donor, details: DonationDetails): Donation {abstract}"])
 cls("MoneyDonationFactory", "factory", tags=[("factory", "ConcreteCreator")],
-    methods=["+ createDonation(donor, details): Donation"])
+    methods=["+ createDonation(donor: Donor, details: DonationDetails): Donation"])
 cls("FoodDonationFactory", "factory", tags=[("factory", "ConcreteCreator")],
-    methods=["+ createDonation(donor, details): Donation"])
+    methods=["+ createDonation(donor: Donor, details: DonationDetails): Donation"])
 cls("DonationDetails", "factory", "helper", fields=[
-    "- amount: BigDecimal", "- method: String", "- items: List<FoodItem>", "- expiryDate: Date", "- pickupWindow: String"])
+    "- donor: Donor", "- area: Area", "- amount: BigDecimal", "- method: String", "- items: List<FoodItem>",
+    "- expiryDate: LocalDate", "- pickupWindow: String"])
 cls("Donation", "factory", "abstract", abstract=True, tags=[("factory", "Product")],
-    fields=["- id: int", "- date: Date"], methods=["+ updateStatus(status): void", "+ getType(): String {abstract}"])
+    fields=["# id: int", "# date: LocalDate"],
+    methods=["# Donation(donor: Donor)", "+ updateStatus(status: DonationStatus): void",
+             "+ cancel(cancelled: DonationStatus): boolean", "+ getDetails(): String",
+             "+ getType(): String {abstract}", "# statusName(): String"])
 cls("MoneyDonation", "factory", tags=[("factory", "ConcreteProduct")],
-    fields=["- amount: BigDecimal", "- method: String", "- transactionId: String", "- paid: boolean"],
-    methods=["+ markAsPaid(): void", "+ getType(): String"])
+    fields=["+ METHODS: List<String> {static, final}", "- amount: double", "- method: String",
+            "- transactionId: String", "- paid: boolean"],
+    methods=["+ MoneyDonation(donor: Donor)", "+ markAsPaid(transactionId: String): void", "+ isPaid(): boolean",
+             "+ cancel(cancelled: DonationStatus): boolean", "+ getType(): String", "+ getDetails(): String"])
 cls("FoodDonation", "factory", tags=[("factory", "ConcreteProduct")],
-    fields=["- expiryDate: Date", "- pickupWindow: String"],
-    methods=["+ addItem(item): void", "+ removeItem(item): void", "+ isExpired(): boolean", "+ getType(): String"])
+    fields=["- expiryDate: LocalDate", "- pickupWindow: String"],
+    methods=["+ FoodDonation(donor: Donor)", "+ addItem(item: FoodItem): void", "+ removeItem(itemId: int): void",
+             "+ getItems(): List<FoodItem>", "+ getTotalQuantity(): double", "+ isExpired(): boolean",
+             "+ getType(): String", "+ getDetails(): String"])
 
 # Decorator: receipts
 cls("ReceiptService", "decorator", tags=[("decorator", "Client")],
-    methods=["+ createReceipt(donationId): Receipt", "+ generateReceiptText(id, options): String"])
-cls("ReceiptOptions", "decorator", "helper", fields=["- thankYou: boolean", "- taxInfo: boolean"])
+    fields=["- repository: ReceiptRepository"],
+    methods=["+ ReceiptService()", "+ createReceipt(donationId: int): Receipt",
+             "+ generateReceiptText(receiptId: int, options: ReceiptOptions): String"])
+cls("ReceiptOptions", "decorator", "datatype",
+    fields=["- thankYou: boolean {final}", "- taxInfo: boolean {final}"],
+    methods=["+ ReceiptOptions(thankYou: boolean, taxInfo: boolean)"])
 cls("ReceiptComponent", "decorator", "interface", tags=[("decorator", "Component")], methods=["+ generate(): String"])
 cls("BasicReceipt", "decorator", tags=[("decorator", "ConcreteComponent")],
-    fields=["- receipt: Receipt"], methods=["+ generate(): String"])
+    fields=["- receipt: Receipt {final}"], methods=["+ BasicReceipt(receipt: Receipt)", "+ generate(): String"])
 cls("ReceiptDecorator", "decorator", "abstract", abstract=True, tags=[("decorator", "Decorator")],
-    fields=["# wrapped: ReceiptComponent"], methods=["+ generate(): String"])
-cls("ThankYouDecorator", "decorator", tags=[("decorator", "ConcreteDecorator")], methods=["+ generate(): String"])
-cls("TaxInfoDecorator", "decorator", tags=[("decorator", "ConcreteDecorator")], methods=["+ generate(): String"])
+    fields=["# wrapped: ReceiptComponent {final}"],
+    methods=["+ ReceiptDecorator(wrapped: ReceiptComponent)", "+ generate(): String"])
+cls("ThankYouDecorator", "decorator", tags=[("decorator", "ConcreteDecorator")],
+    methods=["+ ThankYouDecorator(wrapped: ReceiptComponent)", "+ generate(): String"])
+cls("TaxInfoDecorator", "decorator", tags=[("decorator", "ConcreteDecorator")],
+    methods=["+ TaxInfoDecorator(wrapped: ReceiptComponent)", "+ generate(): String"])
 
 # Model: donation details
-cls("DonationStatus", "lookup", "lookup", fields=["- id: int", "- name: String"])
-cls("Receipt", "model", fields=["- id: int", "- receiptNumber: String", "- issueDate: Date"])
+cls("DonationStatus", "lookup", "lookup", fields=[
+    "+ POSTED, PAID, PICKED_UP, DELIVERED,", "    EXPIRED, CANCELLED: String {static, final}",
+    "- id: int", "- name: String"],
+    methods=["+ DonationStatus(name: String)", "+ DonationStatus(id: int, name: String)"])
+cls("Receipt", "model", fields=["- id: int", "- receiptNumber: String", "- issueDate: LocalDate"],
+    methods=["+ Receipt(donation: Donation, receiptNumber: String, issueDate: LocalDate)"])
 cls("FoodItem", "model", fields=[
-    "- id: int", "- name: String", "- quantity: BigDecimal", "- allergens: String", "- expiryDate: Date"],
-    methods=["+ isExpired(): boolean", "+ getInfo(): String"])
-cls("FoodCategory", "lookup", "lookup", fields=["- id: int", "- name: String"])
-cls("Unit", "lookup", "lookup", fields=["- id: int", "- name: String"])
-cls("DonationRequest", "model", fields=["- id: int", "- quantity: BigDecimal", "- date: Date", "- status: String"],
-    methods=["+ updateStatus(status): void"])
-cls("Distribution", "model", fields=["- id: int", "- date: Date", "- quantity: BigDecimal"])
+    "- id: int", "- name: String", "- quantity: double", "- allergens: String", "- expiryDate: LocalDate"],
+    methods=["+ getInfo(): String", "+ isExpired(): boolean", "~ formatQuantity(value: double): String {static}"])
+cls("FoodCategory", "lookup", "lookup", fields=["- id: int", "- name: String"],
+    methods=["+ FoodCategory(name: String)", "+ FoodCategory(id: int, name: String)"])
+cls("Unit", "lookup", "lookup", fields=["- id: int", "- name: String"],
+    methods=["+ Unit(name: String)", "+ Unit(id: int, name: String)"])
+cls("DonationRequest", "model", fields=["- id: int", "- quantity: BigDecimal", "- date: LocalDate", "- status: String"],
+    methods=["+ DonationRequest(beneficiary: Beneficiary, category: FoodCategory,",
+             "    quantity: BigDecimal, unit: Unit)", "+ updateStatus(value: String): void"])
+cls("Distribution", "model", fields=["- id: int", "- date: LocalDate", "- quantity: BigDecimal"],
+    methods=["+ Distribution(donation: FoodDonation, beneficiary: Beneficiary,",
+             "    volunteer: Volunteer, date: LocalDate)",
+             "+ Distribution(donation: FoodDonation, beneficiary: Beneficiary,",
+             "    volunteer: Volunteer, date: LocalDate, quantity: BigDecimal)"])
 cls("ImpactReport", "model", fields=[
-    "- period: String", "- mealsDelivered: int", "- familiesServed: int",
-    "- deliveriesPerVolunteer: Map<Volunteer, Integer>"])
+    "- period: String", "- mealsDelivered: int", "- familiesServed: int", "- deliveryCount: int",
+    "- deliveriesPerVolunteer: Map<Volunteer, Integer>"],
+    methods=["+ ImpactReport(period: String, familiesServed: int, deliveryCount: int,",
+             "    deliveries: Map<Volunteer, Integer>)", "+ isMealCountAvailable(): boolean"])
 
 # Model: users
 cls("User", "model", "abstract", abstract=True, fields=[
-    "- id: int", "- name: String", "- email: String", "- passwordHash: String", "- phone: String",
-    "- address: String", "- active: boolean", "- createdAt: DateTime"],
-    methods=["+ updateContactInfo(phone, address): void", "+ changeEmail(email): void", "+ setActive(active): void"])
-cls("Area", "lookup", "lookup", fields=["- id: int", "- city: String", "- district: String"])
+    "# id: int", "# name: String", "# email: String", "# passwordHash: String", "# phone: String",
+    "# address: String", "# active: boolean", "# createdAt: LocalDateTime"],
+    methods=["+ updateContactInfo(phone: String, address: String): void", "+ changeEmail(email: String): void",
+             "+ setActive(active: boolean): void"])
+cls("Area", "lookup", "lookup", fields=["- id: int", "- city: String", "- district: String"],
+    methods=["+ Area(id: int, city: String, district: String)"])
 cls("Admin", "model", fields=["- permissions: Set<String>"],
-    methods=["+ hasPermission(p): boolean", "+ addPermission(p): void", "+ removePermission(p): void"])
+    methods=["+ hasPermission(p: String): boolean", "+ addPermission(p: String): void",
+             "+ removePermission(p: String): void"])
 cls("Donor", "model", fields=["- donorType: String", "- organizationName: String"])
-cls("Beneficiary", "model", fields=["- householdSize: int", "- needs: String"], methods=["+ updateNeeds(needs): void"])
+cls("Beneficiary", "model", fields=["- householdSize: int", "- needs: String"],
+    methods=["+ updateNeeds(needs: String): void"])
 
 # Volunteer work
-cls("PickupTaskService", "mvc", "Service layer", methods=[
-    "+ viewAvailableTasks(volunteerId): List<PickupTask>", "+ viewMyTasks(volunteerId): List<PickupTask>",
-    "+ acceptTask(taskId, volunteerId): boolean", "+ declineTask(taskId, volunteerId): void",
-    "+ markPickedUp(taskId, volunteerId): void", "+ markDelivered(taskId, volunteerId): void",
-    "+ assignTask(taskId, volunteerId): void"])
+cls("PickupTaskService", "mvc", "Service layer",
+    fields=["- pickupTaskRepository: PickupTaskRepository", "- volunteerRepository: VolunteerRepository",
+            "- notificationRepository: NotificationRepository"],
+    methods=[
+    "+ listPending(): List<PickupTask>",
+    "+ viewAvailableTasks(volunteerId: int, areaId: Integer): List<PickupTask>",
+    "+ viewMyTasks(volunteerId: int): List<PickupTask>",
+    "+ acceptTask(taskId: int, volunteerId: int): boolean", "+ declineTask(taskId: int, volunteerId: int): void",
+    "+ markPickedUp(taskId: int, volunteerId: int): void", "+ markDelivered(taskId: int, volunteerId: int): void",
+    "+ assignTask(taskId: int, volunteerId: int): void",
+    "- isQualified(volunteer: Volunteer, task: PickupTask): boolean",
+    "- requireQualified(volunteer: Volunteer, task: PickupTask): void",
+    "- requireTask(taskId: int): PickupTask", "- requireOwnTask(taskId: int, volunteerId: int): PickupTask",
+    "- requireVolunteer(volunteerId: int): Volunteer"])
 cls("PickupTask", "model", fields=[
-    "- id: int", "- pickupTime: DateTime", "- deliveryTime: DateTime", "- status: PickupTaskStatus",
-    "- hoursSpent: double", "- requiredSkill: String"],
-    methods=["+ assign(volunteer): boolean", "+ markPickedUp(): void", "+ markDelivered(): Distribution",
+    "- MINIMUM_HOURS: double {static, final}", "- id: int", "- pickupTime: LocalDateTime",
+    "- deliveryTime: LocalDateTime", "- status: PickupTaskStatus", "- hoursSpent: double",
+    "- requiredSkill: String", "- itemsSummary: String"],
+    methods=["+ assign(v: Volunteer): boolean", "+ markPickedUp(): void", "+ markDelivered(): Distribution",
              "+ calculateHours(): double"])
 cls("PickupTaskStatus", "model", "enum", fields=["PENDING", "ASSIGNED", "PICKED_UP", "DELIVERED", "CANCELLED"])
-cls("VolunteerService", "mvc", "Service layer", methods=[
-    "+ updateProfile(...): void", "+ logHours(volunteerId, hours, note): void",
-    "+ viewHours(volunteerId): List<VolunteerHours>"])
+cls("VolunteerService", "mvc", "Service layer", fields=["- volunteerRepository: VolunteerRepository"], methods=[
+    "+ getVolunteer(id: int): Volunteer", "+ listVolunteers(): List<Volunteer>",
+    "+ updateProfile(id: int, availability: String, hasTransport: boolean, areaId: Integer,",
+    "    skills: List<String>, preferences: List<String>): void",
+    "+ logHours(volunteerId: int, hours: double, note: String): void",
+    "+ viewHours(volunteerId: int): List<VolunteerHours>",
+    "- cleanValues(values: List<String>): List<String>"])
 cls("Volunteer", "model", fields=[
     "- availability: String", "- hasTransport: boolean", "- totalHours: double", "- skills: List<String>",
     "- preferences: List<String>"],
-    methods=["+ addHours(hours): void", "+ hasSkill(skill): boolean", "+ prefers(activity): boolean"])
-cls("VolunteerHours", "model", fields=["- hours: double", "- source: String", "- loggedAt: DateTime"])
+    methods=["+ addHours(hours: double): void", "+ hasSkill(skill: String): boolean",
+             "+ prefers(activity: String): boolean",
+             "- containsIgnoreCase(values: List<String>, target: String): boolean {static}"])
+cls("VolunteerHours", "model", fields=[
+    "+ PICKUP, EVENT, MANUAL: String {static, final}", "- id: int", "- volunteerId: int", "- hours: double",
+    "- source: String", "- note: String", "- loggedAt: LocalDateTime"])
 
 # Strategy: matching volunteers
 cls("VolunteerMatchingService", "strategy", tags=[("strategy", "Strategy: Context")],
-    fields=["- strategy: VolunteerMatchingStrategy"],
-    methods=["+ setStrategy(name): void", "+ rankForTask(taskId): List<Volunteer>",
-             "+ rankForEvent(eventId): List<Volunteer>"])
+    fields=["- PICKUP_ACTIVITY: String {static, final}", "- strategies: Map<String, VolunteerMatchingStrategy>",
+            "- strategy: VolunteerMatchingStrategy", "- volunteerRepository: VolunteerRepository",
+            "- pickupTaskRepository: PickupTaskRepository", "- eventRepository: EventRepository"],
+    methods=["+ VolunteerMatchingService()", "+ strategyNames(): List<String>", "+ setStrategy(name: String): void",
+             "+ rankForTask(taskId: int): List<Volunteer>", "+ rankForEvent(eventId: int): List<Volunteer>",
+             "- rank(criteria: MatchCriteria): List<Volunteer>", "- partOfWeek(date: LocalDateTime): String"])
 cls("VolunteerMatchingStrategy", "strategy", "interface", tags=[("strategy", "Strategy")],
-    methods=["+ score(volunteer, criteria): int"])
-cls("SkillMatchStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")], methods=["+ score(volunteer, criteria): int"])
-cls("AvailabilityMatchStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")], methods=["+ score(volunteer, criteria): int"])
-cls("PreferenceMatchStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")], methods=["+ score(volunteer, criteria): int"])
-cls("MatchCriteria", "strategy", "helper", fields=[
-    "- activity: String", "- requiredSkill: String", "- availabilityKeyword: String", "- needsTransport: boolean"])
+    fields=["+ MATCH: int {static, final}", "+ NO_MATCH: int {static, final}"],
+    methods=["+ score(volunteer: Volunteer, criteria: MatchCriteria): int"])
+cls("SkillMatchStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")],
+    methods=["+ score(volunteer: Volunteer, criteria: MatchCriteria): int"])
+cls("AvailabilityMatchStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")],
+    methods=["+ score(volunteer: Volunteer, criteria: MatchCriteria): int"])
+cls("PreferenceMatchStrategy", "strategy", tags=[("strategy", "ConcreteStrategy")],
+    methods=["+ score(volunteer: Volunteer, criteria: MatchCriteria): int"])
+cls("MatchCriteria", "strategy", "datatype", fields=[
+    "- activity: String {final}", "- requiredSkill: String {final}", "- availabilityKeyword: String {final}",
+    "- needsTransport: boolean {final}"],
+    methods=["+ MatchCriteria(activity: String, requiredSkill: String,",
+             "    availabilityKeyword: String, needsTransport: boolean)"])
 
 # Factory Method: certificates
 cls("CertificateService", "factory", tags=[("factory", "Factory: Client"), ("decorator", "Decorator: Client")],
-    methods=["+ requestCertificate(volunteerId): String"])
+    fields=["- PARTICIPATION_HOURS: double {static, final}", "- ACHIEVEMENT_HOURS: double {static, final}",
+            "- volunteerRepository: VolunteerRepository", "- certificateRepository: CertificateRepository"],
+    methods=["+ requestCertificate(volunteerId: int): String", "- factoryFor(hours: double): CertificateFactory",
+             "- findOrIssue(factory: CertificateFactory, volunteer: Volunteer): Certificate",
+             "- hoursAtIssue(certificate: Certificate): List<VolunteerHours>"])
 cls("CertificateFactory", "factory", "abstract", abstract=True, tags=[("factory", "Creator")],
-    methods=["+ issue(volunteer): Certificate", "# createCertificate(): Certificate {abstract}"])
+    methods=["+ issue(volunteer: Volunteer): Certificate", "# createCertificate(): Certificate {abstract}"])
 cls("ParticipationCertificateFactory", "factory", tags=[("factory", "ConcreteCreator")],
     methods=["# createCertificate(): Certificate"])
 cls("AchievementCertificateFactory", "factory", tags=[("factory", "ConcreteCreator")],
     methods=["# createCertificate(): Certificate"])
-cls("ParticipationCertificate", "factory", tags=[("factory", "ConcreteProduct")], methods=["+ getType(): String"])
-cls("AchievementCertificate", "factory", tags=[("factory", "ConcreteProduct")], methods=["+ getType(): String"])
+cls("ParticipationCertificate", "factory", tags=[("factory", "ConcreteProduct")],
+    fields=["+ TYPE: String {static, final}"], methods=["+ getType(): String"])
+cls("AchievementCertificate", "factory", tags=[("factory", "ConcreteProduct")],
+    fields=["+ TYPE: String {static, final}"], methods=["+ getType(): String"])
 cls("Certificate", "factory", "abstract", abstract=True, tags=[("factory", "Product")],
-    fields=["- certificateNumber: String", "- hoursAtIssue: double", "- issuedAt: DateTime"],
+    fields=["- id: int", "- certificateNumber: String", "- hoursAtIssue: double", "- issuedAt: LocalDateTime"],
     methods=["+ getType(): String {abstract}"])
 
 # Decorator: certificates
 cls("CertificateComponent", "decorator", "interface", tags=[("decorator", "Component")], methods=["+ generate(): String"])
 cls("BasicCertificate", "decorator", tags=[("decorator", "ConcreteComponent")],
-    fields=["- certificate: Certificate"], methods=["+ generate(): String"])
+    fields=["- DATE_FORMAT: DateTimeFormatter {static, final}", "- certificate: Certificate {final}"],
+    methods=["+ BasicCertificate(certificate: Certificate)", "+ generate(): String", "- title(): String"])
 cls("CertificateDecorator", "decorator", "abstract", abstract=True, tags=[("decorator", "Decorator")],
-    fields=["# wrapped: CertificateComponent"], methods=["+ generate(): String"])
+    fields=["# wrapped: CertificateComponent {final}"],
+    methods=["# CertificateDecorator(wrapped: CertificateComponent)", "+ generate(): String"])
 cls("HoursBreakdownDecorator", "decorator", tags=[("decorator", "ConcreteDecorator")],
-    fields=["- hoursEntries: List<VolunteerHours>"], methods=["+ generate(): String"])
-cls("SignatureDecorator", "decorator", tags=[("decorator", "ConcreteDecorator")], methods=["+ generate(): String"])
+    fields=["- hoursEntries: List<VolunteerHours> {final}"],
+    methods=["+ HoursBreakdownDecorator(wrapped: CertificateComponent,", "    hoursEntries: List<VolunteerHours>)",
+             "+ generate(): String"])
+cls("SignatureDecorator", "decorator", tags=[("decorator", "ConcreteDecorator")],
+    methods=["+ SignatureDecorator(wrapped: CertificateComponent)", "+ generate(): String"])
 
 # Observer and events
-cls("EventService", "observer", tags=[("observer", "Client")], fields=["- publisher: EventPublisher"],
-    methods=["+ registerVolunteer(eventId, volunteerId): void", "+ markAttendance(registrationId, status, hours): void",
-             "+ announceChange(event, message): void"])
+cls("EventService", "observer", tags=[("observer", "Client")],
+    fields=["- repository: EventRepository", "- registrationRepository: EventRegistrationRepository",
+            "- volunteerRepository: VolunteerRepository", "- notificationRepository: NotificationRepository",
+            "- publisher: EventPublisher"],
+    methods=["+ create(value: Event): long", "+ findById(id: long): Event", "+ list(): List<Event>",
+             "+ update(event: Event): boolean", "+ updateEvent(id: int, data: Event): void",
+             "+ cancelEvent(eventId: long): boolean",
+             "+ registerVolunteer(eventId: int, volunteerId: int): void",
+             "+ listRegistrations(volunteerId: int): List<EventRegistration>",
+             "+ listRegistrationsForEvent(eventId: int): List<EventRegistration>",
+             "+ markAttendance(registrationId: int, status: String, hours: double): void",
+             "+ announceChange(e: Event, msg: String): void", "- requireEvent(id: int): Event"])
 cls("Subject", "observer", "interface", tags=[("observer", "Subject")],
-    methods=["+ registerObserver(o): void", "+ removeObserver(o): void", "+ notifyObservers(): void"])
+    methods=["+ registerObserver(o: EventObserver): void", "+ removeObserver(o: EventObserver): void",
+             "+ notifyObservers(): void"])
 cls("EventPublisher", "observer", tags=[("observer", "ConcreteSubject")],
-    fields=["- observersByEvent: Map<Integer, List<EventObserver>>", "- currentEvent: Event", "- currentMessage: String"],
-    methods=["+ registerObserver(eventId, o): void", "+ clearObservers(eventId): void", "+ updateEvent(event, message): void"])
-cls("EventObserver", "observer", "interface", tags=[("observer", "Observer")], methods=["+ update(event, message): void"])
+    fields=["- ALL_EVENTS: int {static, final}", "- observersByEvent: Map<Integer, List<EventObserver>>",
+            "- currentEvent: Event", "- currentMessage: String"],
+    methods=["+ registerObserver(o: EventObserver): void", "+ registerObserver(eventId: int, o: EventObserver): void",
+             "+ removeObserver(o: EventObserver): void", "+ clearObservers(eventId: int): void",
+             "+ notifyObservers(): void", "+ updateEvent(event: Event, message: String): void",
+             "- notifyList(key: int): void"])
+cls("EventObserver", "observer", "interface", tags=[("observer", "Observer")],
+    methods=["+ update(event: Event, message: String): void"])
 cls("VolunteerObserver", "observer", tags=[("observer", "ConcreteObserver")],
-    fields=["- volunteerId: int"], methods=["+ update(event, message): void"])
-cls("NotificationLogger", "observer", tags=[("observer", "ConcreteObserver")], methods=["+ update(event, message): void"])
+    fields=["- volunteerId: int {final}", "- notificationRepository: NotificationRepository {final}"],
+    methods=["+ VolunteerObserver(volunteerId: int, notificationRepository: NotificationRepository)",
+             "+ update(event: Event, message: String): void"])
+cls("NotificationLogger", "observer", tags=[("observer", "ConcreteObserver")],
+    fields=["- repository: NotificationRepository"],
+    methods=["+ NotificationLogger(repository: NotificationRepository)",
+             "+ update(event: Event, message: String): void"])
 cls("Notification", "model", fields=[
-    "- id: int", "- recipientId: int", "- message: String", "- read: boolean", "- createdAt: DateTime"],
-    methods=["+ markAsRead(): void"])
+    "- id: int", "- recipientId: int", "- message: String", "- read: boolean", "- createdAt: LocalDateTime"],
+    methods=["+ Notification(recipientId: int, message: String)", "+ markAsRead(): void"])
 cls("Event", "model", fields=[
-    "- id: int", "- title: String", "- description: String", "- date: DateTime", "- location: String",
-    "- requiredSkill: String"], methods=["+ reschedule(date): void"])
-cls("EventType", "lookup", "lookup", fields=["- id: int", "- name: String"])
-cls("EventRegistration", "model", fields=["- id: int", "- registeredAt: DateTime", "- attendanceStatus: String"],
-    methods=["+ updateAttendance(status): void"])
+    "- id: int", "- title: String", "- description: String", "- date: LocalDateTime", "- location: String",
+    "- requiredSkill: String"], methods=["+ reschedule(date: LocalDateTime): void"])
+cls("EventType", "lookup", "lookup", fields=["- id: int", "- name: String"],
+    methods=["+ EventType(id: int, name: String)"])
+cls("EventRegistration", "model", fields=[
+    "+ REGISTERED, ATTENDED, ABSENT: String {static, final}", "- VALID_STATUSES: Set<String> {static, final}",
+    "- id: int", "- registeredAt: LocalDateTime", "- attendanceStatus: String"],
+    methods=["+ EventRegistration(event: Event, volunteer: Volunteer)", "+ updateAttendance(status: String): void"])
 
 # Back end of the MVC chain
 cls("Repositories", "mvc", "Repository layer", fields=[
@@ -215,7 +329,7 @@ cls("Repositories", "mvc", "Repository layer", fields=[
     "UserRepository, VolunteerRepository, DonationRepository, ReceiptRepository,",
     "PickupTaskRepository, DistributionRepository, DonationRequestRepository,",
     "EventRepository, EventRegistrationRepository, NotificationRepository,",
-    "CertificateRepository, and one per lookup table"])
+    "CertificateRepository, and one per lookup table; JdbcSupport (shared helper)"])
 cls("DatabaseManager", "singleton", tags=[("singleton", "Singleton")], fields=[
     "- uniqueInstance: DatabaseManager {static}", "- url: String", "- username: String", "- password: String"],
     methods=["- DatabaseManager()", "+ getInstance(): DatabaseManager {static}", "+ getConnection(): Connection"])
@@ -234,7 +348,7 @@ def implements(child, parent): edge(parent, child, "implements")
 def assoc(a, b, label="", a_mult="", b_mult=""): edge(a, b, "assoc", label, a_mult, b_mult)
 def link(a, b, label="", a_mult="", b_mult=""): edge(a, b, "link", label, a_mult, b_mult)
 def uses(a, b, label="use"): edge(a, b, "uses", f"«{label}»")
-def aggregate(holder, part, label="", part_mult=""): edge(holder, part, "aggregate", label, "", part_mult)
+def aggregate(holder, part, label="", part_mult="", holder_mult=""): edge(holder, part, "aggregate", label, holder_mult, part_mult)
 def wraps(decorator, component): edge(component, decorator, "wraps", "wraps", "1", "")
 def compose(holder, part, label="", holder_mult="", part_mult=""): edge(holder, part, "compose", label, holder_mult, part_mult)
 
@@ -251,21 +365,24 @@ uses("Repositories", "DatabaseManager", "getInstance")
 edge("DatabaseManager", "DatabaseManager", "assoc", "uniqueInstance", "", "1")
 
 # Strategy
-aggregate("DonationService", "DonationProcessingStrategy", "strategies", "1..*")
+aggregate("DonationService", "DonationProcessingStrategy", "strategies", "1..*", "1")
 for name in ["CashStrategy", "CheckStrategy", "OnlineStrategy"]:
     implements(name, "DonationProcessingStrategy")
-uses("DonationProcessingStrategy", "DonationProcessingResult", "create")
-aggregate("VolunteerMatchingService", "VolunteerMatchingStrategy", "strategy", "1")
+uses("DonationProcessingStrategy", "DonationProcessingResult", "returns")
+uses("DonationProcessingStrategy", "MoneyDonation", "processes")
+aggregate("VolunteerMatchingService", "VolunteerMatchingStrategy", "strategies", "1..*", "1")
 for name in ["SkillMatchStrategy", "AvailabilityMatchStrategy", "PreferenceMatchStrategy"]:
     implements(name, "VolunteerMatchingStrategy")
+uses("VolunteerMatchingService", "MatchCriteria", "create")
 uses("VolunteerMatchingStrategy", "MatchCriteria")
 uses("VolunteerMatchingStrategy", "Volunteer")
 
 # Factory Method
-uses("DonationService", "DonationFactory")
+aggregate("DonationService", "DonationFactory", "factories", "1..*", "1")
 extends("MoneyDonationFactory", "DonationFactory")
 extends("FoodDonationFactory", "DonationFactory")
 uses("DonationFactory", "DonationDetails")
+uses("DonationFactory", "Donation", "create")
 uses("MoneyDonationFactory", "MoneyDonation", "create")
 uses("FoodDonationFactory", "FoodDonation", "create")
 extends("MoneyDonation", "Donation")
@@ -273,6 +390,7 @@ extends("FoodDonation", "Donation")
 uses("CertificateService", "CertificateFactory")
 extends("ParticipationCertificateFactory", "CertificateFactory")
 extends("AchievementCertificateFactory", "CertificateFactory")
+uses("CertificateFactory", "Certificate", "create")
 uses("ParticipationCertificateFactory", "ParticipationCertificate", "create")
 uses("AchievementCertificateFactory", "AchievementCertificate", "create")
 extends("ParticipationCertificate", "Certificate")
@@ -281,6 +399,7 @@ extends("AchievementCertificate", "Certificate")
 # Decorator
 uses("ReceiptService", "ReceiptComponent")
 uses("ReceiptService", "ReceiptOptions")
+uses("ReceiptService", "Receipt", "create")
 implements("BasicReceipt", "ReceiptComponent")
 implements("ReceiptDecorator", "ReceiptComponent")
 wraps("ReceiptDecorator", "ReceiptComponent")
@@ -299,31 +418,33 @@ assoc("HoursBreakdownDecorator", "VolunteerHours", "", "", "0..*")
 # Observer
 assoc("EventService", "EventPublisher", "", "", "1")
 uses("EventService", "VolunteerObserver", "create")
+uses("EventService", "Event")
+uses("EventService", "EventRegistration", "create")
 implements("EventPublisher", "Subject")
 aggregate("EventPublisher", "EventObserver", "notifies", "0..*")
 assoc("EventPublisher", "Event", "currentEvent", "", "0..1")
 implements("VolunteerObserver", "EventObserver")
 implements("NotificationLogger", "EventObserver")
 uses("VolunteerObserver", "Notification", "create")
-uses("NotificationLogger", "Notification", "create")
 
-# Domain
+# Domain. Multiplicities follow the foreign keys in database/schema.sql: a nullable column is 0..1.
 for name in ["Donor", "Volunteer", "Beneficiary", "Admin"]:
     extends(name, "User")
-assoc("User", "Area", "lives in", "0..*", "1")
+assoc("User", "Area", "lives in", "0..*", "0..1")
 link("User", "Notification", "receives", "1", "0..*")
 link("Volunteer", "VolunteerHours", "logs", "1", "0..*")
 link("Volunteer", "EventRegistration", "has", "1", "0..*")
 link("Event", "EventRegistration", "has", "1", "0..*")
 assoc("Event", "EventType", "of type", "0..*", "1")
-link("Volunteer", "PickupTask", "accepts", "1", "0..*")
-link("Beneficiary", "PickupTask", "receives", "1", "0..*")
+link("Volunteer", "PickupTask", "accepts", "0..1", "0..*")
+link("Beneficiary", "PickupTask", "receives", "0..1", "0..*")
 assoc("PickupTask", "PickupTaskStatus")
+assoc("PickupTask", "Area", "in area", "0..*", "0..1")
 link("FoodDonation", "PickupTask", "picked up in", "1", "0..1")
 uses("PickupTask", "Distribution", "create")
 link("Volunteer", "Certificate", "earns", "1", "0..*")
 link("Donor", "Donation", "makes", "1", "0..*")
-assoc("Donation", "Area", "located in", "0..*", "1")
+assoc("Donation", "Area", "located in", "0..*", "0..1")
 assoc("Donation", "DonationStatus", "has status", "0..*", "1")
 link("Donation", "Receipt", "has", "1", "0..1")
 compose("FoodDonation", "FoodItem", "contains", "1", "1..*")
@@ -334,12 +455,13 @@ assoc("DonationRequest", "Unit", "in unit", "0..*", "1")
 link("Beneficiary", "DonationRequest", "submits", "1", "0..*")
 link("FoodDonation", "Distribution", "records", "1", "0..*")
 link("Beneficiary", "Distribution", "gets", "1", "0..*")
-link("Volunteer", "Distribution", "delivers", "1", "0..*")
+link("Volunteer", "Distribution", "delivers", "0..1", "0..*")
 uses("ImpactReport", "Distribution")
 
 # Services to the classes they work on
 uses("VolunteerService", "Volunteer")
 uses("PickupTaskService", "PickupTask")
+uses("PickupTaskService", "Notification", "create")
 
 # --- Sizes ------------------------------------------------------------------------------------------
 _fonts = {}
@@ -422,19 +544,19 @@ def draw_class(c, x, y):
     strong, light = COLORS[c["role"]]
     w, h = c["w"], c["h"]
     out = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{light}" stroke="{strong}" stroke-width="1.5" rx="3"/>',
-           f'<rect x="{x}" y="{y}" width="{w}" height="{c["header"]}" fill="{strong}" rx="3"/>']
+           f'<line x1="{x}" y1="{y + c["header"]}" x2="{x + w}" y2="{y + c["header"]}" stroke="{strong}" stroke-width="0.8"/>']
     cx, ty = x + w / 2, y + 17
     if c["stereotype"]:
-        out.append(f'<text x="{cx}" y="{y + 13}" text-anchor="middle" font-size="{STEREO}" fill="#FFFFFF">«{esc(c["stereotype"])}»</text>')
+        out.append(f'<text x="{cx}" y="{y + 13}" text-anchor="middle" font-size="{STEREO}" fill="{INK}">«{esc(c["stereotype"])}»</text>')
         ty = y + 29
     style = ' font-style="italic"' if c["abstract"] else ""
-    out.append(f'<text x="{cx}" y="{ty}" text-anchor="middle" font-size="{NAME}" font-weight="bold"{style} fill="#FFFFFF">{esc(c["name"])}</text>')
+    out.append(f'<text x="{cx}" y="{ty}" text-anchor="middle" font-size="{NAME}" font-weight="bold"{style} fill="{INK}">{esc(c["name"])}</text>')
     cy = y + c["header"]
     if c["tags"]:
         tw = w / len(c["tags"])
         for i, (role, label) in enumerate(c["tags"]):
-            out.append(f'<rect x="{x + i * tw}" y="{cy}" width="{tw}" height="{TAG_H}" fill="{COLORS[role][0]}" opacity="0.82"/>'
-                       f'<text x="{x + i * tw + tw / 2}" y="{cy + 13}" text-anchor="middle" font-size="{TAG}" fill="#FFFFFF">{esc(label)}</text>')
+            out.append(f'<rect x="{x + i * tw}" y="{cy}" width="{tw}" height="{TAG_H}" fill="{COLORS[role][0]}" opacity="0.22"/>'
+                       f'<text x="{x + i * tw + tw / 2}" y="{cy + 13}" text-anchor="middle" font-size="{TAG}" fill="{INK}">{esc(label)}</text>')
         cy += TAG_H
     first = True
     for section in (c["fields"], c["methods"]):
@@ -445,7 +567,8 @@ def draw_class(c, x, y):
         first = False
         cy += 5
         for line in section:
-            out.append(f'<text x="{x + PAD}" y="{cy + 12}" font-size="{BODY}" fill="{INK}">{esc(line)}</text>')
+            indent = 16 if line.startswith("    ") else 0  # a wrapped signature continues indented
+            out.append(f'<text x="{x + PAD + indent}" y="{cy + 12}" font-size="{BODY}" fill="{INK}">{esc(line.strip())}</text>')
             cy += LINE_H
         cy += 5
     return "".join(out)
@@ -480,17 +603,17 @@ def marker(kind, tip, ux, uy, color):
     return f'<polygon points="{_pts(pts)}" fill="{fill}" stroke="{color}" stroke-width="1.4"/>'
 
 
-def halo_text(x, y, text, size=11, anchor="start", color=INK):
+def halo_text(x, y, text, size=11, anchor="start", color=INK, halo=3):
     return (f'<text x="{x:.1f}" y="{y:.1f}" text-anchor="{anchor}" font-size="{size}" fill="{color}" stroke="#FFFFFF" '
-            f'stroke-width="3" paint-order="stroke" stroke-linejoin="round">{esc(text)}</text>')
+            f'stroke-width="{halo}" paint-order="stroke" stroke-linejoin="round">{esc(text)}</text>')
 
 
 def mult_text(end, inner, text):
     ux, uy = direction(end, inner)
     x, y = end[0] + ux * 21, end[1] + uy * 21
     if abs(uy) > abs(ux):  # vertical line: sit to the right of it
-        return halo_text(x + 5, y + 4, text, 10.5)
-    return halo_text(x, y - 5, text, 10.5, "middle")
+        return halo_text(x + 5, y + 4, text, 10.5, halo=6)
+    return halo_text(x, y - 5, text, 10.5, "middle", halo=6)
 
 
 def draw_edge(e, points, color):
@@ -513,6 +636,12 @@ def draw_edge(e, points, color):
         out.append(marker("open_diamond", points[-1], ux, uy, color))
     if kind == "compose":
         out.append(marker("diamond", points[0], sx, sy, color))
+    return "".join(out)
+
+
+def draw_multiplicities(e, points):
+    """Kept apart from draw_edge so they go in the top layer, where no later line can cross them."""
+    out = []
     if e["top_mult"]:
         out.append(mult_text(points[0], points[1], e["top_mult"]))
     if e["bottom_mult"]:
@@ -522,10 +651,10 @@ def draw_edge(e, points, color):
 
 def legend_svg(x, y):
     parts = [f'<text x="{x}" y="{y + 30}" font-size="32" font-weight="bold" fill="{INK}">FoodBridge Class Diagram</text>',
-             f'<text x="{x}" y="{y + 54}" font-size="15" fill="#475569">Each class is coloured by the design pattern it belongs to. Getters and setters are omitted.</text>']
+             f'<text x="{x}" y="{y + 54}" font-size="15" fill="#475569">Each class is coloured by the design pattern it belongs to; white classes are the core domain. Getters, setters, toString() and no-arg constructors of data classes are omitted; references between domain classes are drawn as lines.</text>']
     cx, cy = x, y + 74
     for role, label in LEGEND:
-        parts.append(f'<rect x="{cx}" y="{cy}" width="22" height="22" rx="4" fill="{COLORS[role][0]}"/>'
+        parts.append(f'<rect x="{cx}" y="{cy}" width="22" height="22" rx="4" fill="{COLORS[role][1]}" stroke="{COLORS[role][0]}" stroke-width="1.5"/>'
                      f'<text x="{cx + 29}" y="{cy + 16}" font-size="15" fill="{INK}">{esc(label)}</text>')
         cx += 50 + text_width(label, 15)
     lx, ly = x, cy + 46
@@ -557,12 +686,13 @@ def build():
     for item in result["edges"]:
         e = EDGES[int(item["id"][1:])]
         a, b = by_name[e["top"]], by_name[e["bottom"]]
-        same = a["role"] == b["role"] and a["role"] not in ("model", "lookup")
+        same = a["role"] == b["role"] and a["role"] not in ("model", "lookup", "mvc")
         color = COLORS[a["role"]][0] if same else LINE
         for section in item.get("sections", []):
             pts = [section["startPoint"], *section.get("bendPoints", []), section["endPoint"]]
             points = [(p["x"] + ox, p["y"] + oy) for p in pts]
             edge_svg.append(draw_edge(e, points, color))
+            label_svg.append(draw_multiplicities(e, points))
         for label in item.get("labels", []):
             label_svg.append(halo_text(label["x"] + ox + 3, label["y"] + oy + 11, label["text"]))
 
