@@ -20,6 +20,7 @@ public abstract class ModuleView implements View {
         frame.setContentPane(content); frame.setSize(width,height); frame.setLocationRelativeTo(null);
     }
     @Override public void show() { frame.setVisible(true); refresh(); }
+    public final void close() { frame.dispose(); }
     protected abstract void refresh();
     protected final <T> void task(Supplier<T> operation,Consumer<T> success) {
         if(busy) return;
