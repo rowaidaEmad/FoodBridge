@@ -109,8 +109,12 @@ public class UserRepository implements Repository<User> {
                 if (ps.executeUpdate() == 0) {
                     throw new IllegalArgumentException("No user with id " + item.getId());
                 }
-                deleteSubtype(c, item);
-                insertSubtype(c, item);
+                if (item instanceof Volunteer v) {
+                    updateVolunteer(c, v);
+                } else {
+                    deleteSubtype(c, item);
+                    insertSubtype(c, item);
+                }
                 c.commit();
             } catch (SQLException | RuntimeException e) {
                 c.rollback();
@@ -219,6 +223,16 @@ public class UserRepository implements Repository<User> {
                 ps.setInt(1, item.getId());
                 ps.executeUpdate();
             }
+        }
+    }
+
+    private void updateVolunteer(Connection c, Volunteer v) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "UPDATE volunteers SET availability = ?, has_transport = ? WHERE user_id = ?")) {
+            ps.setString(1, v.getAvailability());
+            ps.setBoolean(2, v.hasTransport());
+            ps.setInt(3, v.getId());
+            ps.executeUpdate();
         }
     }
 

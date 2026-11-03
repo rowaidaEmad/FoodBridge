@@ -1,5 +1,5 @@
 package foodbridge.models.enums;
 
 public enum PickupTaskStatus {
-    AVAILABLE, ASSIGNED, PICKED_UP, DELIVERED, CANCELLED
+    PENDING, ASSIGNED, PICKED_UP, DELIVERED, CANCELLED
 }
