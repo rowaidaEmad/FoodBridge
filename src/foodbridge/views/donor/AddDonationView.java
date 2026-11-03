@@ -5,7 +5,6 @@ import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +29,7 @@ import foodbridge.models.lookups.FoodCategory;
 import foodbridge.models.lookups.Unit;
 import foodbridge.models.users.Donor;
 import foodbridge.views.BackBar;
+import foodbridge.views.DatePicker;
 import foodbridge.views.View;
 
 /**
@@ -57,13 +57,16 @@ public class AddDonationView implements View {
     private final JComboBox<Unit> itemUnit = new JComboBox<>();
     private final JComboBox<FoodCategory> itemCategory = new JComboBox<>();
     private final JTextField itemAllergens = new JTextField(8);
-    private final JTextField itemExpiry = new JTextField(9);
-    private final JTextField expiryField = new JTextField(10);
+    private final DatePicker itemExpiry = new DatePicker();
+    private final DatePicker expiryField = new DatePicker();
     private final JTextField pickupField = new JTextField(14);
 
     public AddDonationView(DonationController donationController, Donor donor) {
         this.donationController = donationController;
         this.donor = donor;
+        // Food that is already expired can't be donated.
+        itemExpiry.setMinDate(LocalDate.now());
+        expiryField.setMinDate(LocalDate.now());
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("Money", moneyPanel());
@@ -77,7 +80,7 @@ public class AddDonationView implements View {
         dialog.setTitle("FoodBridge - Add donation");
         dialog.setModal(true);
         dialog.add(page);
-        dialog.setSize(760, 490);
+        dialog.setSize(760, 520);
         dialog.setLocationRelativeTo(null);
     }
 
@@ -133,24 +136,33 @@ public class AddDonationView implements View {
         itemUnit.setRenderer(nameRenderer());
         itemCategory.setRenderer(nameRenderer());
 
-        JPanel itemRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        itemRow.setBorder(BorderFactory.createTitledBorder("New item"));
-        itemRow.add(new JLabel("Name"));
-        itemRow.add(itemName);
-        itemRow.add(new JLabel("Qty"));
-        itemRow.add(itemQuantity);
-        itemRow.add(itemUnit);
-        itemRow.add(itemCategory);
-        itemRow.add(new JLabel("Allergens"));
-        itemRow.add(itemAllergens);
-        itemRow.add(new JLabel("Expiry"));
-        itemRow.add(itemExpiry);
+        // Two rows so every field and the Add button fit in the window width.
+        JPanel firstRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        firstRow.add(new JLabel("Name"));
+        firstRow.add(itemName);
+        firstRow.add(new JLabel("Qty"));
+        firstRow.add(itemQuantity);
+        firstRow.add(new JLabel("Unit"));
+        firstRow.add(itemUnit);
+        firstRow.add(new JLabel("Category"));
+        firstRow.add(itemCategory);
+
         JButton addItem = new JButton("Add item");
         addItem.addActionListener(e -> onAddItem());
-        itemRow.add(addItem);
+        JPanel secondRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        secondRow.add(new JLabel("Allergens"));
+        secondRow.add(itemAllergens);
+        secondRow.add(new JLabel("Expiry"));
+        secondRow.add(itemExpiry);
+        secondRow.add(addItem);
+
+        JPanel itemRow = new JPanel(new GridLayout(2, 1));
+        itemRow.setBorder(BorderFactory.createTitledBorder("New item"));
+        itemRow.add(firstRow);
+        itemRow.add(secondRow);
 
         JPanel donationRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        donationRow.add(new JLabel("Donation expiry (yyyy-mm-dd):"));
+        donationRow.add(new JLabel("Donation expiry:"));
         donationRow.add(expiryField);
         donationRow.add(new JLabel("Pickup window:"));
         donationRow.add(pickupField);
@@ -188,14 +200,14 @@ public class AddDonationView implements View {
             item.setUnit((Unit) itemUnit.getSelectedItem());
             item.setCategory((FoodCategory) itemCategory.getSelectedItem());
             item.setAllergens(itemAllergens.getText().isBlank() ? null : itemAllergens.getText().trim());
-            item.setExpiryDate(parseDate(itemExpiry.getText()));
+            item.setExpiryDate(itemExpiry.getDate());
             items.add(item);
             itemsModel.addRow(new Object[] { item.getName(), item.getQuantity(), item.getUnit().getName(),
                     item.getCategory().getName(), item.getAllergens(), item.getExpiryDate() });
             itemName.setText("");
             itemQuantity.setText("");
             itemAllergens.setText("");
-            itemExpiry.setText("");
+            itemExpiry.setDate(null);
         } catch (NumberFormatException ex) {
             showError("Enter a valid quantity, e.g. 10");
         } catch (RuntimeException ex) {
@@ -212,25 +224,13 @@ public class AddDonationView implements View {
             DonationDetails details = new DonationDetails();
             details.setDonor(donor);
             details.setItems(items);
-            details.setExpiryDate(parseDate(expiryField.getText()));
+            details.setExpiryDate(expiryField.getDate());
             details.setPickupWindow(pickupField.getText().isBlank() ? null : pickupField.getText().trim());
             int id = donationController.createDonation("food", details);
             JOptionPane.showMessageDialog(dialog, "Food donation #" + id + " saved with " + items.size() + " item(s).");
             dialog.dispose();
         } catch (RuntimeException ex) {
             showError(ex.getMessage());
-        }
-    }
-
-    /** Empty -> null; otherwise yyyy-mm-dd. */
-    private static LocalDate parseDate(String text) {
-        if (text == null || text.isBlank()) {
-            return null;
-        }
-        try {
-            return LocalDate.parse(text.trim());
-        } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Dates must look like 2026-12-31");
         }
     }
 
