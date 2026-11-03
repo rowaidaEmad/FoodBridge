@@ -8,7 +8,10 @@ import foodbridge.models.donations.DonationDetails;
 import foodbridge.models.donations.DonationProcessingResult;
 import foodbridge.models.donations.MoneyDonation;
 import foodbridge.patterns.factory.DonationFactory;
+import foodbridge.patterns.strategy.CashStrategy;
+import foodbridge.patterns.strategy.CheckStrategy;
 import foodbridge.patterns.strategy.DonationProcessingStrategy;
+import foodbridge.patterns.strategy.OnlineStrategy;
 import foodbridge.repositories.DonationRepository;
 
 // Strategy pattern - Context
@@ -29,6 +32,14 @@ public class DonationService {
 
     public DonationService(DonationRepository donationRepository) {
         this.donationRepository = donationRepository;
+        registerDefaultStrategies();
+    }
+
+    /** A new payment method needs only a new strategy class and one line here. */
+    private void registerDefaultStrategies() {
+        registerStrategy("cash", new CashStrategy());
+        registerStrategy("check", new CheckStrategy());
+        registerStrategy("online", new OnlineStrategy());
     }
 
     /** Adds or replaces the strategy for a payment method ("cash", "check", "online"). */
