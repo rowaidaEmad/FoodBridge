@@ -24,7 +24,8 @@ public class LookupController {
     private UnitRepository unitRepository;
 
     public LookupController() {
-        // TODO: implement
+        eventTypeRepository = new EventTypeRepository();
+        // TODO: create the other lookup repositories once they are implemented
     }
 
     public void addArea(Area item) {
@@ -62,20 +63,21 @@ public class LookupController {
     }
 
     public void addEventType(EventType item) {
-        // TODO: implement
+        item.setName(requireName(item.getName()));
+        eventTypeRepository.add(item);
     }
 
     public List<EventType> listEventTypes() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return eventTypeRepository.findAll();
     }
 
     public void updateEventType(EventType item) {
-        // TODO: implement
+        item.setName(requireName(item.getName()));
+        eventTypeRepository.update(item);
     }
 
     public void deleteEventType(int id) {
-        // TODO: implement
+        eventTypeRepository.delete(id);
     }
 
     public void addFoodCategory(FoodCategory item) {
@@ -110,5 +112,12 @@ public class LookupController {
 
     public void deleteUnit(int id) {
         // TODO: implement
+    }
+
+    private String requireName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Name is required");
+        }
+        return name.trim();
     }
 }

@@ -7,18 +7,47 @@ and an admin manages users, lookup tables, events and impact reports.
 > **Status: skeleton only.** Every class has its fields and method signatures.
 > Method bodies are `// TODO: implement` (non-void methods throw `UnsupportedOperationException`)
 > so the project compiles while each team member implements their own module.
+> **Done so far:** `DatabaseManager` (PostgreSQL) and the full Event Type CRUD
+> (`EventType` → `EventTypeRepository` → `LookupController` → `EventTypeView`), merged from the
+> `FoodBridgeColdStart` branch.
 
-## Run (VS Code)
+## Database (PostgreSQL)
 
-1. Install JDK 17+ and the **Extension Pack for Java**.
-2. File → Open Folder → this folder (the one that contains `src`).
-3. Open `src/foodbridge/Main.java` → **Run** (or F5 → "Run FoodBridge").
+1. Install PostgreSQL and make sure the service is running.
+2. Create the database and tables (from this folder):
+   ```
+   psql -U postgres -c "CREATE DATABASE nonprofit_db"
+   psql -U postgres -d nonprofit_db -f database/schema.sql
+   psql -U postgres -d nonprofit_db -f database/seed.sql     # optional starter lookup data
+   ```
+3. Set the connection environment variables (`DB_PASSWORD` is required, the others have defaults):
 
-Command line:
+   | Variable | Default |
+   |---|---|
+   | `DB_URL` | `jdbc:postgresql://localhost:5432/nonprofit_db` |
+   | `DB_USER` | `postgres` |
+   | `DB_PASSWORD` | *(none — your postgres password)* |
+
+   PowerShell (current window only): `$env:DB_PASSWORD = "your-password"`.
+   Permanently: `setx DB_PASSWORD "your-password"`, then restart VS Code.
+
+`database/schema.sql` is a proposed schema: `User` and `Donation` subclasses use a shared table plus
+one subtype table each. Verify it with the team before building the other repositories.
+`ImpactReport` is computed and has no table.
+
+## Run
+
+The project uses **Maven** (`pom.xml`) to download the PostgreSQL JDBC driver. Sources stay in `src/`.
+
+**VS Code:** install JDK 17+ and the **Extension Pack for Java**, open this folder, wait for the
+Maven import to finish, then open `src/foodbridge/Main.java` → **Run** (or F5 → "Run FoodBridge").
+
+**Command line** (needs Maven installed):
 ```
-javac -d bin $(find src -name "*.java")      # PowerShell: javac -d bin (Get-ChildItem -Recurse src -Filter *.java).FullName
-java -cp bin foodbridge.Main
+mvn compile exec:java
 ```
+
+Running opens the Event Types console menu (add / list / rename / delete), saved in PostgreSQL.
 
 ## MVC layers
 

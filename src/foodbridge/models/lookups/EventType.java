@@ -8,20 +8,26 @@ public class EventType {
     private String name;
 
     public EventType() {
-        // TODO: implement
+    }
+
+    public EventType(int id, String name) {
+        this.id = id;
+        this.name = name;
     }
 
     public int getId() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {
-        // TODO: implement
-        throw new UnsupportedOperationException("Not implemented yet");
+        return name;
     }
 
     public void setName(String name) {
-        // TODO: implement
+        this.name = name;
     }
 }
