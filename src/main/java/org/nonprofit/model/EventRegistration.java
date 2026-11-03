@@ -3,13 +3,21 @@ package org.nonprofit.model;
 import java.time.*;
 import java.math.BigDecimal;
 import java.util.*;
+//this model for a vol to register into an event
+//event_id, vol_id
+
 public class EventRegistration {
+
     private long id;
     private long eventId;
     private long volunteerId;
     private LocalDateTime registeredAt;
     private String attendanceStatus;
-    public EventRegistration() { }
+
+    public EventRegistration() {
+
+    }
+    //setters and getters
     public long getId() { return id; }
     public void setId(long value) { this.id = value; }
     public long getEventId() { return eventId; }

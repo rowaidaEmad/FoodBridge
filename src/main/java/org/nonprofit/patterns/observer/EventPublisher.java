@@ -3,7 +3,14 @@ package org.nonprofit.patterns.observer;
 
 import java.util.*;
 import org.nonprofit.model.Event;
+/*
+this publisher has 3 main functions :
+    1. sub : to add an observer
+    2. unsub : to remove an obs
+    3. notify all the observers
+ */
 public class EventPublisher {
+    // map event_id to the list of it's observers
     private final Map<Long,List<EventObserver>> byEvent = new HashMap<>();
 
     public void subscribe(long eventId, EventObserver observer) {

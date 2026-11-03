@@ -4,6 +4,7 @@ import java.time.*;
 import java.math.BigDecimal;
 import java.util.*;
 public class EventType {
+
     private long id;
     private String name;
     public EventType() { }
