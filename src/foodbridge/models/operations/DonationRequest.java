@@ -39,8 +39,9 @@ public class DonationRequest {
     public void setDate(LocalDate value) { date = Objects.requireNonNull(value, "Date is required."); }
     public String getStatus() { return status; }
     public void updateStatus(String value) {
-        if (value == null || !Set.of("PENDING", "APPROVED", "REJECTED").contains(value))
-            throw new IllegalArgumentException("Status must be PENDING, APPROVED or REJECTED.");
+        // FULFILLED is set when a volunteer delivers food for an approved request.
+        if (value == null || !Set.of("PENDING", "APPROVED", "REJECTED", "FULFILLED").contains(value))
+            throw new IllegalArgumentException("Status must be PENDING, APPROVED, REJECTED or FULFILLED.");
         status = value;
     }
 }

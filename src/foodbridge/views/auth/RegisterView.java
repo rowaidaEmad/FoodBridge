@@ -19,6 +19,7 @@ import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 
 import foodbridge.controllers.AuthController;
+import foodbridge.models.lookups.Area;
 import foodbridge.models.users.Beneficiary;
 import foodbridge.models.users.Donor;
 import foodbridge.models.users.User;
@@ -44,6 +45,7 @@ public class RegisterView implements View {
     private final JPasswordField confirmField = new JPasswordField(20);
     private final JTextField phoneField = new JTextField(20);
     private final JTextField addressField = new JTextField(20);
+    private final JComboBox<Area> areaBox = new JComboBox<>();
     private final JComboBox<String> roleBox = new JComboBox<>(new String[] { DONOR, VOLUNTEER, BENEFICIARY });
 
     private final JComboBox<String> donorTypeBox =
@@ -57,13 +59,16 @@ public class RegisterView implements View {
     public RegisterView(AuthController authController) {
         this.authController = authController;
 
-        JPanel common = grid(7);
+        // Every role has an area: pickup tasks are offered and matched to beneficiaries by area.
+        authController.listAreas().forEach(areaBox::addItem);
+        JPanel common = grid(8);
         addRow(common, "Name:", nameField);
         addRow(common, "Email:", emailField);
         addRow(common, "Password:", passwordField);
         addRow(common, "Confirm password:", confirmField);
         addRow(common, "Phone:", phoneField);
         addRow(common, "Address:", addressField);
+        addRow(common, "Area:", areaBox);
         addRow(common, "I am a:", roleBox);
 
         JPanel donorPanel = grid(2);
@@ -123,6 +128,7 @@ public class RegisterView implements View {
         }
         try {
             User user = buildUser();
+            user.setArea((Area) areaBox.getSelectedItem());
             user.setName(nameField.getText().trim());
             user.changeEmail(emailField.getText().trim());
             user.updateContactInfo(blankToNull(phoneField.getText()), blankToNull(addressField.getText()));

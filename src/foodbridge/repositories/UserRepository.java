@@ -10,6 +10,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
+import foodbridge.models.lookups.Area;
 import foodbridge.models.users.Admin;
 import foodbridge.models.users.Beneficiary;
 import foodbridge.models.users.Donor;
@@ -26,10 +27,12 @@ public class UserRepository implements Repository<User> {
 
     private static final String SELECT_USERS =
             "SELECT u.id, u.name, u.email, u.password_hash, u.phone, u.address, u.role, u.is_active, u.created_at,"
+            + " u.area_id, ar.city, ar.district,"
             + " d.donor_type, d.organization_name,"
             + " v.availability, v.has_transport, v.total_hours,"
             + " b.household_size, b.needs"
             + " FROM users u"
+            + " LEFT JOIN areas ar ON ar.id = u.area_id"
             + " LEFT JOIN donors d ON d.user_id = u.id"
             + " LEFT JOIN volunteers v ON v.user_id = u.id"
             + " LEFT JOIN beneficiaries b ON b.user_id = u.id";
@@ -40,8 +43,8 @@ public class UserRepository implements Repository<User> {
 
     @Override
     public void add(User item) {
-        String sql = "INSERT INTO users(name, email, password_hash, phone, address, role, is_active)"
-                + " VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users(name, email, password_hash, phone, address, role, is_active, area_id)"
+                + " VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection c = db.getConnection()) {
             c.setAutoCommit(false);
             try (PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -52,6 +55,7 @@ public class UserRepository implements Repository<User> {
                 ps.setString(5, item.getAddress());
                 ps.setString(6, roleOf(item));
                 ps.setBoolean(7, item.isActive());
+                setArea(ps, 8, item.getArea());
                 ps.executeUpdate();
                 try (ResultSet rs = ps.getGeneratedKeys()) {
                     rs.next();
@@ -135,15 +139,16 @@ public class UserRepository implements Repository<User> {
         }
     }
 
-    /** Updates only the users row, for the contact and active fields; the subtype row is not touched. */
+    /** Updates only the users row, for the contact, area and active fields; the subtype row is not touched. */
     public void updateAccount(User item) {
         try (Connection c = db.getConnection(); PreparedStatement ps = c.prepareStatement(
-                "UPDATE users SET email = ?, phone = ?, address = ?, is_active = ? WHERE id = ?")) {
+                "UPDATE users SET email = ?, phone = ?, address = ?, is_active = ?, area_id = ? WHERE id = ?")) {
             ps.setString(1, item.getEmail());
             ps.setString(2, item.getPhone());
             ps.setString(3, item.getAddress());
             ps.setBoolean(4, item.isActive());
-            ps.setInt(5, item.getId());
+            setArea(ps, 5, item.getArea());
+            ps.setInt(6, item.getId());
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Could not update user: " + e.getMessage(), e);
@@ -205,6 +210,10 @@ public class UserRepository implements Repository<User> {
         user.changeEmail(rs.getString("email"));
         user.setPasswordHash(rs.getString("password_hash"));
         user.updateContactInfo(rs.getString("phone"), rs.getString("address"));
+        int areaId = rs.getInt("area_id");
+        if (!rs.wasNull()) {
+            user.setArea(new Area(areaId, rs.getString("city"), rs.getString("district")));
+        }
         user.setActive(rs.getBoolean("is_active"));
         Timestamp created = rs.getTimestamp("created_at");
         user.setCreatedAt(created == null ? null : created.toLocalDateTime());
@@ -259,6 +268,14 @@ public class UserRepository implements Repository<User> {
         try (PreparedStatement ps = c.prepareStatement("DELETE FROM " + table + " WHERE user_id = ?")) {
             ps.setInt(1, item.getId());
             ps.executeUpdate();
+        }
+    }
+
+    private static void setArea(PreparedStatement ps, int index, Area area) throws SQLException {
+        if (area == null) {
+            ps.setNull(index, Types.BIGINT);
+        } else {
+            ps.setInt(index, area.getId());
         }
     }
 

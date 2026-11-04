@@ -5,11 +5,14 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.MessageDigest;
 import java.util.Base64;
+import java.util.List;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
+import foodbridge.models.lookups.Area;
 import foodbridge.models.users.User;
+import foodbridge.repositories.AreaRepository;
 import foodbridge.repositories.UserRepository;
 
 /**
@@ -43,12 +46,20 @@ public class AuthController {
         return user;
     }
 
+    public List<Area> listAreas() {
+        return new AreaRepository().findAll();
+    }
+
     public void register(User user, String password) {
         if (user.getName() == null || user.getName().isBlank()) {
             throw new IllegalArgumentException("Name is required.");
         }
         if (user.getEmail() == null || !user.getEmail().matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")) {
             throw new IllegalArgumentException("Enter a valid email address.");
+        }
+        // Admins do not take part in area matching.
+        if (!(user instanceof foodbridge.models.users.Admin) && user.getArea() == null) {
+            throw new IllegalArgumentException("Choose your area.");
         }
         if (password == null || password.length() < 6) {
             throw new IllegalArgumentException("Password must be at least 6 characters.");

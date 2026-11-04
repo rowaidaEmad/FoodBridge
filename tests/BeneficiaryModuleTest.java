@@ -29,7 +29,7 @@ public class BeneficiaryModuleTest {
         try(Connection c=DatabaseManager.getInstance().getConnection(); Statement s=c.createStatement()) { s.execute(sql); }
     }
     static Beneficiary addBeneficiary(AuthController auth,String name) {
-        Beneficiary b=new Beneficiary(); b.setName(name); b.changeEmail(name+"@example.test"); b.setHouseholdSize(3); b.updateNeeds("Rice"); auth.register(b,PASSWORD); return b;
+        Beneficiary b=new Beneficiary(); b.setName(name); b.changeEmail(name+"@example.test"); b.setHouseholdSize(3); b.updateNeeds("Rice"); b.setArea(new AreaRepository().findAll().get(0)); auth.register(b,PASSWORD); return b;
     }
     static DonationRequest request(FoodCategory category,Unit unit,String quantity) {
         DonationRequest r=new DonationRequest(); r.setCategory(category); r.setUnit(unit); r.setQuantity(new BigDecimal(quantity)); return r;

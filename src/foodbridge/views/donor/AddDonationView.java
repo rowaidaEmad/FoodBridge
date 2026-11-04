@@ -25,6 +25,7 @@ import foodbridge.controllers.DonationController;
 import foodbridge.models.donations.DonationDetails;
 import foodbridge.models.donations.FoodItem;
 import foodbridge.models.donations.MoneyDonation;
+import foodbridge.models.lookups.Area;
 import foodbridge.models.lookups.FoodCategory;
 import foodbridge.models.lookups.Unit;
 import foodbridge.models.users.Donor;
@@ -60,6 +61,7 @@ public class AddDonationView implements View {
     private final DatePicker itemExpiry = new DatePicker();
     private final DatePicker expiryField = new DatePicker();
     private final JTextField pickupField = new JTextField(14);
+    private final JComboBox<Area> areaBox = new JComboBox<>();
 
     public AddDonationView(DonationController donationController, Donor donor) {
         this.donationController = donationController;
@@ -92,6 +94,13 @@ public class AddDonationView implements View {
             }
             for (FoodCategory c : donationController.listFoodCategories()) {
                 itemCategory.addItem(c);
+            }
+            // Volunteers see pickup tasks by area, so default to the area the donor lives in.
+            for (Area a : donationController.listAreas()) {
+                areaBox.addItem(a);
+                if (donor.getArea() != null && donor.getArea().getId() == a.getId()) {
+                    areaBox.setSelectedItem(a);
+                }
             }
         } catch (RuntimeException ex) {
             showError(ex.getMessage());
@@ -166,6 +175,12 @@ public class AddDonationView implements View {
         donationRow.add(expiryField);
         donationRow.add(new JLabel("Pickup window:"));
         donationRow.add(pickupField);
+        JPanel areaRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        areaRow.add(new JLabel("Pickup area:"));
+        areaRow.add(areaBox);
+        JPanel donationRows = new JPanel(new GridLayout(0, 1));
+        donationRows.add(donationRow);
+        donationRows.add(areaRow);
 
         JButton removeItem = new JButton("Remove selected item");
         removeItem.addActionListener(e -> {
@@ -179,7 +194,7 @@ public class AddDonationView implements View {
         save.addActionListener(e -> onSaveFood());
 
         JPanel bottom = new JPanel(new BorderLayout());
-        bottom.add(donationRow, BorderLayout.NORTH);
+        bottom.add(donationRows, BorderLayout.NORTH);
         JPanel buttons = right(removeItem);
         buttons.add(save);
         bottom.add(buttons, BorderLayout.SOUTH);
@@ -225,6 +240,7 @@ public class AddDonationView implements View {
             details.setDonor(donor);
             details.setItems(items);
             details.setExpiryDate(expiryField.getDate());
+            details.setArea((Area) areaBox.getSelectedItem());
             details.setPickupWindow(pickupField.getText().isBlank() ? null : pickupField.getText().trim());
             int id = donationController.createDonation("food", details);
             JOptionPane.showMessageDialog(dialog, "Food donation #" + id + " saved with " + items.size() + " item(s).");

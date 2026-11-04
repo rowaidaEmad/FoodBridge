@@ -3,7 +3,6 @@ package foodbridge.models.users;
 import java.util.ArrayList;
 import java.util.List;
 
-import foodbridge.models.lookups.Area;
 
 /**
  * Core domain. Performs pickup tasks, delivers distributions, registers for events.
@@ -43,10 +42,6 @@ public class Volunteer extends User {
 
     public double getTotalHours() {
         return totalHours;
-    }
-
-    public void setArea(Area area) {
-        this.area = area;
     }
 
     public List<String> getSkills() {

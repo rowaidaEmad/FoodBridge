@@ -11,6 +11,8 @@ DELETE FROM donation_statuses WHERE name IN ('PENDING','ACCEPTED','COMPLETED','C
 INSERT INTO food_categories(name) VALUES ('Cooked meals'),('Bakery'),('Dairy'),('Canned'),('Produce') ON CONFLICT(name) DO NOTHING;
 INSERT INTO units(name) VALUES ('kg'),('meals'),('boxes'),('liters') ON CONFLICT(name) DO NOTHING;
 INSERT INTO donation_statuses(name) VALUES ('Posted'),('Picked up'),('Delivered'),('Expired'),('Cancelled') ON CONFLICT(name) DO NOTHING;
+-- Every account picks an area when registering, and donations and pickup tasks are matched by it.
+INSERT INTO areas(city,district) VALUES ('Cairo','Nasr City'),('Cairo','Maadi'),('Giza','Dokki'),('Alexandria','Smouha') ON CONFLICT(city,district) DO NOTHING;
 -- Money donations move from Posted to Paid after a successful payment.
 INSERT INTO donation_statuses(name) VALUES ('Paid') ON CONFLICT(name) DO NOTHING;
 -- Default admin account. Log in with admin@foodbridge.test / secret123. Safe to run again.

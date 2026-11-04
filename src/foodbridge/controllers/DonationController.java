@@ -6,13 +6,16 @@ import foodbridge.models.donations.Donation;
 import foodbridge.models.donations.DonationDetails;
 import foodbridge.models.donations.DonationProcessingResult;
 import foodbridge.models.donations.Receipt;
+import foodbridge.models.lookups.Area;
 import foodbridge.models.lookups.DonationStatus;
 import foodbridge.models.lookups.FoodCategory;
 import foodbridge.models.lookups.Unit;
 import foodbridge.patterns.decorator.ReceiptOptions;
+import foodbridge.repositories.AreaRepository;
 import foodbridge.repositories.DonationRepository;
 import foodbridge.repositories.DonationStatusRepository;
 import foodbridge.repositories.FoodCategoryRepository;
+import foodbridge.repositories.PickupTaskRepository;
 import foodbridge.repositories.UnitRepository;
 import foodbridge.services.DonationService;
 import foodbridge.services.ReceiptService;
@@ -27,6 +30,7 @@ public class DonationController {
     private DonationStatusRepository donationStatusRepository;
     private FoodCategoryRepository foodCategoryRepository;
     private UnitRepository unitRepository;
+    private final PickupTaskRepository pickupTaskRepository = new PickupTaskRepository();
 
     public DonationController() {
         donationRepository = new DonationRepository();
@@ -61,11 +65,19 @@ public class DonationController {
         if (donation == null) {
             throw new IllegalArgumentException("No donation with id " + donationId);
         }
+        if (pickupTaskRepository.isTaken(donationId)) {
+            throw new IllegalStateException("A volunteer has already taken this donation; it can no longer be cancelled.");
+        }
         if (!donation.cancel(donationStatusRepository.findByName(DonationStatus.CANCELLED))) {
             return false;
         }
         donationRepository.save(donation);
+        pickupTaskRepository.cancelForDonation(donationId);
         return true;
+    }
+
+    public List<Area> listAreas() {
+        return new AreaRepository().findAll();
     }
 
     public List<FoodCategory> listFoodCategories() {

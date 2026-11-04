@@ -42,6 +42,8 @@ import foodbridge.models.users.User;
 import foodbridge.models.users.Volunteer;
 import foodbridge.patterns.singleton.DatabaseManager;
 import foodbridge.repositories.DistributionRepository;
+import foodbridge.repositories.DonationRepository;
+import foodbridge.repositories.DonationRequestRepository;
 import foodbridge.repositories.FoodCategoryRepository;
 import foodbridge.repositories.UnitRepository;
 import foodbridge.repositories.UserRepository;
@@ -104,7 +106,7 @@ public class VolunteerModuleTest {
         walker.setAvailability("weekdays");
         add(walker, "walker");
 
-        Area area = new Area(0, "Cairo", "Maadi");
+        Area area = new Area(0, "Cairo", "Zamalek");
         lookups.addArea(area);
 
         profiles(driver, area);
@@ -148,6 +150,10 @@ public class VolunteerModuleTest {
         return donations.createDonation("food", details);
     }
 
+    private static String donationStatus(int donationId) {
+        return new DonationRepository().findById(donationId).getStatus().getName();
+    }
+
     private static PickupTask taskFor(List<PickupTask> tasks, int donationId) {
         return tasks.stream().filter(t -> t.getDonation().getId() == donationId).findFirst().orElse(null);
     }
@@ -186,7 +192,8 @@ public class VolunteerModuleTest {
         check(task.getHoursSpent() >= 0.25, "A delivery counts at least 15 minutes");
     }
 
-    private static void donationsBecomeTasks(Donor donor, Volunteer driver, Volunteer walker, Beneficiary beneficiary, Area area) {
+    private static void donationsBecomeTasks(Donor donor, Volunteer driver, Volunteer walker, Beneficiary beneficiary, Area area)
+            throws Exception {
         int before = pickups.listTasks().size();
         int id = food(donor, area);
         List<PickupTask> pending = pickups.listTasks();
@@ -214,8 +221,16 @@ public class VolunteerModuleTest {
         rejects(() -> pickups.assignVolunteer(task.getId(), driver.getId()), "A task cannot be assigned twice");
         rejects(() -> pickups.markDelivered(task.getId(), driver.getId()), "Steps stay in order");
         rejects(() -> pickups.markPickedUp(task.getId(), walker.getId()), "Only the assigned volunteer can act");
+        rejects(() -> donations.cancelDonation(id), "A donation a volunteer has taken cannot be cancelled");
         pickups.markPickedUp(task.getId(), driver.getId());
+        check("Picked up".equals(donationStatus(id)), "Pickup moves the donation to Picked up");
+        sql("INSERT INTO donation_requests(beneficiary_id, category_id, unit_id, quantity, status)"
+                + " SELECT t.beneficiary_id, fi.category_id, fi.unit_id, 4, 'APPROVED' FROM pickup_tasks t"
+                + " JOIN food_items fi ON fi.food_donation_id = t.food_donation_id WHERE t.id = ?", task.getId());
         pickups.markDelivered(task.getId(), driver.getId());
+        check("Delivered".equals(donationStatus(id)), "Delivery moves the donation to Delivered");
+        check(new DonationRequestRepository().findByBeneficiary(beneficiary.getId()).stream()
+                .anyMatch(r -> "FULFILLED".equals(r.getStatus())), "Delivery fulfils the beneficiary's approved request");
         check(volunteers.getVolunteer(driver.getId()).getTotalHours() >= 0.25, "Delivery credits hours");
         check(volunteers.viewHours(driver.getId()).stream().anyMatch(h -> "PICKUP".equals(h.getSource())), "Hours record their source");
 

@@ -2,7 +2,9 @@ package foodbridge.controllers;
 
 import java.util.List;
 
+import foodbridge.models.lookups.Area;
 import foodbridge.models.users.User;
+import foodbridge.repositories.AreaRepository;
 import foodbridge.repositories.UserRepository;
 
 /**
@@ -19,6 +21,19 @@ public class UserController {
         User user = requireUser(userId);
         user.updateContactInfo(phone, address);
         userRepository.updateAccount(user);
+    }
+
+    public void changeArea(int userId, Area area) {
+        if (area == null) {
+            throw new IllegalArgumentException("Choose your area.");
+        }
+        User user = requireUser(userId);
+        user.setArea(area);
+        userRepository.updateAccount(user);
+    }
+
+    public List<Area> listAreas() {
+        return new AreaRepository().findAll();
     }
 
     public void changeEmail(int userId, String email) {

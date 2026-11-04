@@ -11,6 +11,7 @@ import java.util.List;
 import foodbridge.models.donations.FoodDonation;
 import foodbridge.models.enums.PickupTaskStatus;
 import foodbridge.models.lookups.Area;
+import foodbridge.models.lookups.DonationStatus;
 import foodbridge.models.operations.PickupTask;
 import foodbridge.models.operations.VolunteerHours;
 import foodbridge.models.users.Beneficiary;
@@ -38,6 +39,16 @@ public class PickupTaskRepository implements Repository<PickupTask> {
             + " AND d.status_id = (SELECT id FROM donation_statuses WHERE name = 'Posted')";
     private static final String GROUP_AND_ORDER =
             " GROUP BY t.id, fd.pickup_window, d.donor_id, d.area_id, ar.city, ar.district, b.name ORDER BY t.id";
+    /**
+     * The beneficiary a delivery of donation d goes to: first one with an APPROVED request for a category
+     * in the donation, then one in the donation's area, then any active beneficiary.
+     */
+    private static final String BEST_BENEFICIARY =
+            "(SELECT b.user_id FROM beneficiaries b JOIN users u ON u.id = b.user_id WHERE u.is_active"
+            + " ORDER BY EXISTS (SELECT 1 FROM donation_requests r"
+            + " JOIN food_items fi ON fi.category_id = r.category_id AND fi.food_donation_id = d.id"
+            + " WHERE r.beneficiary_id = b.user_id AND r.status = 'APPROVED') DESC,"
+            + " (u.area_id IS NOT DISTINCT FROM d.area_id) DESC, b.user_id LIMIT 1)";
 
     private final DatabaseManager db;
 
@@ -87,22 +98,50 @@ public class PickupTaskRepository implements Repository<PickupTask> {
 
     /**
      * Opens a pending task for each Posted food donation that has none, so donations saved by the donation
-     * module reach volunteers. The beneficiary is the active beneficiary in the donation's area (any active
-     * beneficiary if none lives there), so the delivery has someone to go to.
+     * module reach volunteers, and re-picks the beneficiary of every task still pending (see BEST_BENEFICIARY),
+     * so a request approved after the donation was posted is still served first.
      */
     public void openTasksForNewFoodDonations() {
-        String sql = "INSERT INTO pickup_tasks(food_donation_id, beneficiary_id)"
-                + " SELECT fd.donation_id, (SELECT b.user_id FROM beneficiaries b JOIN users u ON u.id = b.user_id"
-                + " WHERE u.is_active ORDER BY (u.area_id IS NOT DISTINCT FROM d.area_id) DESC, b.user_id LIMIT 1)"
+        String open = "INSERT INTO pickup_tasks(food_donation_id, beneficiary_id)"
+                + " SELECT fd.donation_id, " + BEST_BENEFICIARY
                 + " FROM food_donations fd"
                 + " JOIN donations d ON d.id = fd.donation_id"
                 + " JOIN donation_statuses s ON s.id = d.status_id"
                 + " WHERE s.name = 'Posted'"
                 + " AND NOT EXISTS (SELECT 1 FROM pickup_tasks t WHERE t.food_donation_id = fd.donation_id)";
+        String rematch = "UPDATE pickup_tasks t SET beneficiary_id = " + BEST_BENEFICIARY
+                + " FROM donations d WHERE d.id = t.food_donation_id AND t.status = 'PENDING'";
+        JdbcSupport.inTransaction(db, "Could not open pickup tasks", c -> {
+            try (PreparedStatement ps = c.prepareStatement(open)) {
+                ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement(rematch)) {
+                ps.executeUpdate();
+            }
+        });
+    }
+
+    /** True once a volunteer has taken the donation's task, so the donor can no longer cancel it. */
+    public boolean isTaken(int foodDonationId) {
+        String sql = "SELECT 1 FROM pickup_tasks WHERE food_donation_id = ? AND status IN ('ASSIGNED', 'PICKED_UP', 'DELIVERED')";
         try (Connection c = db.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, foodDonationId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Could not load tasks: " + e.getMessage(), e);
+        }
+    }
+
+    /** Closes the pending task of a cancelled donation. */
+    public void cancelForDonation(int foodDonationId) {
+        try (Connection c = db.getConnection(); PreparedStatement ps = c.prepareStatement(
+                "UPDATE pickup_tasks SET status = 'CANCELLED' WHERE food_donation_id = ? AND status = 'PENDING'")) {
+            ps.setInt(1, foodDonationId);
             ps.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Could not open pickup tasks: " + e.getMessage(), e);
+            throw new RuntimeException("Could not cancel task: " + e.getMessage(), e);
         }
     }
 
@@ -156,21 +195,36 @@ public class PickupTaskRepository implements Repository<PickupTask> {
         return changesOneRow(sql, taskId, volunteerId);
     }
 
+    /** Saves the pickup and moves the donation to Picked up, so the donor sees it and can no longer cancel. */
     public void savePickedUp(PickupTask task) {
-        String sql = "UPDATE pickup_tasks SET status = ?, pickup_time = ? WHERE id = ?";
-        try (Connection c = db.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setString(1, task.getStatus().name());
-            ps.setTimestamp(2, JdbcSupport.toTimestamp(task.getPickupTime()));
-            ps.setInt(3, task.getId());
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException("Could not save pickup: " + e.getMessage(), e);
-        }
+        JdbcSupport.inTransaction(db, "Could not save pickup", c -> {
+            try (PreparedStatement ps = c.prepareStatement(
+                    "UPDATE pickup_tasks SET status = ?, pickup_time = ? WHERE id = ?")) {
+                ps.setString(1, task.getStatus().name());
+                ps.setTimestamp(2, JdbcSupport.toTimestamp(task.getPickupTime()));
+                ps.setInt(3, task.getId());
+                ps.executeUpdate();
+            }
+            setDonationStatus(c, task.getId(), DonationStatus.PICKED_UP);
+        });
     }
 
-    /** Saves the delivery, its distribution and the volunteer's hours together. */
+    /**
+     * Saves the delivery, its distribution and the volunteer's hours together, moves the donation to
+     * Delivered and marks the beneficiary's oldest matching approved request FULFILLED.
+     */
     public void completeDelivery(PickupTask task) {
         JdbcSupport.inTransaction(db, "Could not complete delivery", c -> {
+            setDonationStatus(c, task.getId(), DonationStatus.DELIVERED);
+            try (PreparedStatement ps = c.prepareStatement(
+                    "UPDATE donation_requests SET status = 'FULFILLED' WHERE id = (SELECT r.id FROM donation_requests r"
+                    + " JOIN pickup_tasks t ON t.beneficiary_id = r.beneficiary_id"
+                    + " WHERE t.id = ? AND r.status = 'APPROVED' AND r.category_id IN"
+                    + " (SELECT fi.category_id FROM food_items fi WHERE fi.food_donation_id = t.food_donation_id)"
+                    + " ORDER BY r.request_date, r.id LIMIT 1)")) {
+                ps.setInt(1, task.getId());
+                ps.executeUpdate();
+            }
             try (PreparedStatement ps = c.prepareStatement(
                     "UPDATE pickup_tasks SET status = ?, delivery_time = ?, hours_spent = ? WHERE id = ?")) {
                 ps.setString(1, task.getStatus().name());
@@ -208,6 +262,16 @@ public class PickupTaskRepository implements Repository<PickupTask> {
             throw new RuntimeException("Could not load tasks: " + e.getMessage(), e);
         }
         return tasks;
+    }
+
+    private static void setDonationStatus(Connection c, int taskId, String status) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "UPDATE donations SET status_id = (SELECT id FROM donation_statuses WHERE name = ?)"
+                + " WHERE id = (SELECT food_donation_id FROM pickup_tasks WHERE id = ?)")) {
+            ps.setString(1, status);
+            ps.setInt(2, taskId);
+            ps.executeUpdate();
+        }
     }
 
     private boolean changesOneRow(String sql, int first, int second) {
